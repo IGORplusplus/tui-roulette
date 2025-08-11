@@ -1,8 +1,10 @@
 use crate::app::App;
 
-pub mod app;
 pub mod event;
 pub mod ui;
+pub mod components;
+pub mod data;
+pub mod app;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {

@@ -37,6 +37,8 @@ pub enum AppEvent {
     Decrement,
     /// Quit the application.
     Quit,
+    /// Popup screen
+    Popup,
 }
 
 /// Terminal event handler.
