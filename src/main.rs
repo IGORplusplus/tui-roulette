@@ -6,11 +6,13 @@ pub mod components;
 pub mod data;
 pub mod app;
 
+use crossterm::terminal::{enable_raw_mode, disable_raw_mode};
+
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
-    let terminal = ratatui::init();
-    let result = App::new().run(terminal).await;
-    ratatui::restore();
+    enable_raw_mode()?;
+    let result = App::new().run().await;
+    disable_raw_mode()?;
     result
 }

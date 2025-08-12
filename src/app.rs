@@ -98,7 +98,6 @@ impl App {
                 .borders(Borders::ALL);
             let area = centered_rect(60, 20, frame.area());
 
-            self.data.shotgun.load_random_shells(3);
             let popup_text = format!(
                 "Data: {:?}", self.data,
             );

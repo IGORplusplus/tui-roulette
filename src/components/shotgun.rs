@@ -4,8 +4,8 @@ use std::cell::RefCell;
 
 #[derive(Debug, Default, Clone)]
 pub struct Shotgun {
-    pub shells: RefCell<Vec<Shell>>,
-    pub state: ShotgunState,
+    pub mut shells: RefCell<Vec<Shell>>,
+    pub mut state: ShotgunState,
 }
 
 #[derive(Debug, Default, Clone)]
