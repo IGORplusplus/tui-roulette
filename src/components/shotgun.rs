@@ -28,6 +28,13 @@ pub enum Shell {
 
 impl Shotgun {
 
+    pub fn new() -> Shotgun {
+        Shotgun {
+            shells: RefCell::new(Vec::new()),
+            state: ShotgunState::Default,
+        }
+    }
+
     pub fn load(&self,all_shells: Vec<Shell>, num_shells: usize) {
         let mut rng = thread_rng();
         let mut shells = self.shells.borrow_mut();
@@ -52,7 +59,7 @@ impl Shotgun {
         self.load(all_shells, num_shells);
     }
 
-    pub fn load_default_shells(& self, num_shells: usize) {
+    pub fn load_default_shells(&self, num_shells: usize) {
         let all_shells = vec![
             Shell::Live,
             Shell::Blank,
@@ -61,10 +68,12 @@ impl Shotgun {
         self.load(all_shells, num_shells);
     }
 
-    pub fn new() -> Shotgun {
-        Shotgun {
-            shells: RefCell::new(Vec::new()),
-            state: ShotgunState::Default,
+    pub fn shoot(&self) -> Option<String>{
+        let mut shell_borrow = self.shells.borrow_mut();
+        if let Some(popped_shell) = shell_borrow.pop() {
+            Some(format!("Popped shell: {:?}", popped_shell))
+        } else {
+            Some("No shell in shotgun.".to_string())
         }
     }
 }

@@ -39,6 +39,12 @@ pub enum AppEvent {
     Quit,
     /// Popup screen
     Popup,
+    /// Show log
+    Log,
+    /// Reload
+    Reload,
+    /// Shoot
+    Shoot,
 }
 
 /// Terminal event handler.

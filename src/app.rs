@@ -9,6 +9,7 @@ use ratatui::{
 };
 
 use crate::data::Data;
+use std::io;
 
 /// Application.
 #[derive(Debug)]
@@ -16,23 +17,29 @@ pub struct App {
     /// Is the application running?
     pub running: bool,
     //Is the popup showing?
-    pub show_popup: bool,
+    pub bool_popup: bool,
+    //Is the log showing?
+    pub bool_log: bool,
     /// Counter.
     pub counter: u8,
     /// Event handler.
     pub events: EventHandler,
-    // game data
+    /// game data
     pub data: Data,
+    /// log for popup texts
+    pub log: Vec<String>,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
             running: true,
-            show_popup: false,
+            bool_popup: false,
+            bool_log: false,
             counter: 0,
             events: EventHandler::new(),
             data: Data::new(),
+            log: Vec::new(),
         }
     }
 }
@@ -56,7 +63,23 @@ impl App {
                 Event::App(app_event) => match app_event {
                     AppEvent::Increment => self.increment_counter(),
                     AppEvent::Decrement => self.decrement_counter(),
-                    AppEvent::Popup => self.popup(),
+                    AppEvent::Popup => self.show_popup(),
+                    AppEvent::Log => self.show_log(),
+                    AppEvent::Reload => {
+                        /* let mut num_shells = String::new();
+                        io::stdin().read_line(&mut num_shells)
+                            .expect("Failed to read number of shells");
+                        let num_shells: usize = num_shells
+                            .trim()
+                            .parse()
+                            .expect("was not a usize number"); */
+                        self.data.shotgun.load_random_shells(8);
+                    },
+                    AppEvent::Shoot => {
+                        if let Some(msg) = self.data.shotgun.shoot() {
+                            self.log.push(msg);
+                        }
+                    }
                     AppEvent::Quit => self.quit(),
                 },
             }
@@ -74,6 +97,9 @@ impl App {
             KeyCode::Right => self.events.send(AppEvent::Increment),
             KeyCode::Left => self.events.send(AppEvent::Decrement),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::Popup),
+            KeyCode::Char('r' | 'R') => self.events.send(AppEvent::Reload),
+            KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
+            KeyCode::Char(' ') => self.events.send(AppEvent::Shoot),
             // Other handlers you could add here.
             _ => {}
         }
@@ -89,38 +115,35 @@ impl App {
                 Constraint::Min(0),
             ])
             .split(frame.area());
+        let main_block = Block::default()
+            .title("Main UI - Press 'p' for popup, 'l' for log")
+            .border_style(Style::default().fg(Color::Red))
+            .border_type(BorderType::Rounded)
+            .borders(Borders::ALL);
+        frame.render_widget(main_block, frame.area());
         // Draw popup if enabled
-        if self.show_popup {
-            let main_block = Block::default()
-                .title("Popup activated")
-                .border_style(Style::default().fg(Color::Red))
-                .border_type(BorderType::Rounded)
-                .borders(Borders::ALL);
+        if self.bool_popup {
             let area = centered_rect(60, 20, frame.area());
 
             let popup_text = format!(
-                "Data: {:?}", self.data,
+                "Data: {:?} Counter: {}", self.data, self.counter,
             );
             let popup = Paragraph::new(popup_text)
                 .block(Block::default().title("Popup").borders(Borders::ALL))
                 .wrap(Wrap { trim: true });
 
-            frame.render_widget(main_block, frame.area());
             frame.render_widget(Clear, area); // Clear background behind popup
             frame.render_widget(popup, chunks[0]);
-
-            /* let counter_parargraph = Paragraph::new(format!("Counter: {}", self.counter))
-                .style(Style::default().fg(Color::LightBlue))
-                .block(Block::default().title("Counter").borders(Borders::ALL));
-            frame.render_widget(counter_parargraph, chunks[1]); */
         }
-        else {
-            let main_block = Block::default()
-                .title("Main UI - Press 'p' to toggle popup")
-                .border_style(Style::default().fg(Color::Red))
-                .border_type(BorderType::Rounded)
-                .borders(Borders::ALL);
-            frame.render_widget(main_block, frame.area());
+        if self.bool_log{
+            let area = centered_rect(60, 20, frame.area());
+            let log_content = self.log.join("\n");
+            let log_popup = Paragraph::new(log_content)
+                .block(Block::default().title("Message Log").borders(Borders::ALL))
+                .wrap(Wrap {trim: true});
+
+            frame.render_widget(Clear, area);
+            frame.render_widget(log_popup, area);
         }
     }
 
@@ -143,13 +166,12 @@ impl App {
         self.counter = self.counter.saturating_sub(1);
     }
 
-    pub fn popup(&mut self) {
-        self.show_popup = !self.show_popup;
-        let text = if self.show_popup {
-            "Press p to close the popup"
-        } else {
-            "Press p to show the popup"
-        };
+    pub fn show_popup(&mut self) {
+        self.bool_popup = !self.bool_popup;
+    }
+
+    pub fn show_log(&mut self) {
+        self.bool_log = !self.bool_log;
     }
 }
 
