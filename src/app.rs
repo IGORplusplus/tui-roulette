@@ -1,3 +1,5 @@
+use crate::components::enums::ReloadAmount;
+
 use crate::event::{AppEvent, Event, EventHandler};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -9,7 +11,6 @@ use ratatui::{
 };
 
 use crate::data::Data;
-use std::io;
 
 /// Application.
 #[derive(Debug)]
@@ -65,15 +66,8 @@ impl App {
                     AppEvent::Decrement => self.decrement_counter(),
                     AppEvent::Popup => self.show_popup(),
                     AppEvent::Log => self.show_log(),
-                    AppEvent::Reload => {
-                        /* let mut num_shells = String::new();
-                        io::stdin().read_line(&mut num_shells)
-                            .expect("Failed to read number of shells");
-                        let num_shells: usize = num_shells
-                            .trim()
-                            .parse()
-                            .expect("was not a usize number"); */
-                        self.data.shotgun.load_random_shells(8);
+                    AppEvent::Reload(amount) => {
+                        self.data.shotgun.load_random_shells(amount.as_usize());
                     },
                     AppEvent::Shoot => {
                         if let Some(msg) = self.data.shotgun.shoot() {
@@ -97,7 +91,16 @@ impl App {
             KeyCode::Right => self.events.send(AppEvent::Increment),
             KeyCode::Left => self.events.send(AppEvent::Decrement),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::Popup),
-            KeyCode::Char('r' | 'R') => self.events.send(AppEvent::Reload),
+            KeyCode::Char('r' | 'R') => {
+                match self.data.round_count {
+                    1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
+                    2 => self.events.send(AppEvent::Reload(ReloadAmount::Two)),
+                    3 => self.events.send(AppEvent::Reload(ReloadAmount::Three)),
+                    4 => self.events.send(AppEvent::Reload(ReloadAmount::Four)),
+                    5 => self.events.send(AppEvent::Reload(ReloadAmount::Five)),
+                    _ => self.events.send(AppEvent::Reload(ReloadAmount::Five)),
+                }
+            }
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
             KeyCode::Char(' ') => self.events.send(AppEvent::Shoot),
             // Other handlers you could add here.

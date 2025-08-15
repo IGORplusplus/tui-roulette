@@ -24,6 +24,7 @@ pub enum Shell {
     Incendiary,
     BeanBag,
     Electric,
+    Imposter,
 }
 
 impl Shotgun {
@@ -35,7 +36,7 @@ impl Shotgun {
         }
     }
 
-    pub fn load(&self,all_shells: Vec<Shell>, num_shells: usize) {
+    pub fn load(&self,all_shells: Vec<Shell>, weights: Vec<usize>, num_shells: usize) {
         let mut rng = thread_rng();
         let mut shells = self.shells.borrow_mut();
         shells.clear();
@@ -53,10 +54,21 @@ impl Shotgun {
             Shell::Blank,
             Shell::Incendiary,
             Shell::BeanBag,
-            Shell::Electric
+            Shell::Electric,
+            Shell::Imposter,
+        ];
+        
+        let weights = vec![
+            10, //Live
+            14, //Blank
+            2, //Incendiary
+            2, //BeanBag
+            2, //Electric
+            1, //Imposter
         ];
 
-        self.load(all_shells, num_shells);
+
+        self.load(all_shells, weights, num_shells);
     }
 
     pub fn load_default_shells(&self, num_shells: usize) {

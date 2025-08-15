@@ -4,6 +4,8 @@ use ratatui::crossterm::event::Event as CrosstermEvent;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
+use crate::components::enums::ReloadAmount;
+
 /// The frequency at which tick events are emitted.
 const TICK_FPS: f64 = 30.0;
 
@@ -42,7 +44,7 @@ pub enum AppEvent {
     /// Show log
     Log,
     /// Reload
-    Reload,
+    Reload(ReloadAmount),
     /// Shoot
     Shoot,
 }
