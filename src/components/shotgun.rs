@@ -6,11 +6,11 @@ use std::cell::RefCell;
 pub struct Shotgun {
     pub shells: RefCell<Vec<Shell>>,
     pub state: ShotgunState,
-    pub type: ShotgunType,
+    pub model: ShotgunModel,
 }
 
 #[derive(Debug, Default, Clone)]
-pub enum ShotgunType {
+pub enum ShotgunModel {
     #[default]
     Default,
     Revolver, //does twice the amount of damage
@@ -49,6 +49,7 @@ impl Shotgun {
         Shotgun {
             shells: RefCell::new(Vec::new()),
             state: ShotgunState::Default,
+            model: ShotgunModel::Default,
         }
     }
 
