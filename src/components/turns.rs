@@ -1,5 +1,4 @@
 //turns.rs
-
 pub struct TurnSystem {
     pub current_turn: usize,
 }

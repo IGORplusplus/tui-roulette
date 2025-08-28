@@ -1,19 +1,29 @@
 //shotgun.rs
-use rand::{ seq::SliceRandom, thread_rng };
+use rand::{ seq::SliceRandom, thread_rng, distributions::{WeightedIndex, Distribution} };
 use std::cell::RefCell;
 
 #[derive(Debug, Default, Clone)]
 pub struct Shotgun {
     pub shells: RefCell<Vec<Shell>>,
     pub state: ShotgunState,
+    pub type: ShotgunType,
+}
+
+#[derive(Debug, Default, Clone)]
+pub enum ShotgunType {
+    #[default]
+    Default,
+    Revolver, //does twice the amount of damage
 }
 
 #[derive(Debug, Default, Clone)]
 pub enum ShotgunState {
     #[default]
     Default,
-    SawedOff,
-    HotPotato,
+    SawedOff, //does twice the amount of damage
+    Rusty, //permanent until next round misfire chance increased
+    ThickBarrel, //impossible to saw off
+    Reinforced, //Destruct shell becomes offensive but also destroys the shotgun
 }
 
 #[derive(Debug, Default, Clone)]
@@ -21,11 +31,17 @@ pub enum Shell {
     Live,
     #[default]
     Blank,
-    Incendiary,
-    BeanBag,
-    Electric,
-    Imposter,
+    Poison, //
+    BeanBag, //makes player stunned for the next turn, so can only use one item
+    Taser, //
+    Imposter, //looks like a blank but isn't
+    SelfDestruct, //blows up in the person's face if not reinforced
 }
+
+//BeanBag round limits the player to only use one item
+//Russian Roulette item, play russian roulette for a turn instead of the shotgun
+
+
 
 impl Shotgun {
 
@@ -41,10 +57,13 @@ impl Shotgun {
         let mut shells = self.shells.borrow_mut();
         shells.clear();
 
+        let dist = WeightedIndex::new(&weights)
+            .expect("weights can not be zero or negative");
+
         for _ in 0..num_shells {
-            if let Some(random_shell) = all_shells.choose(&mut rng) {
-                shells.push(random_shell.clone());
-            }
+            let idx = dist.sample(&mut rng);
+            let random_shell = all_shells[idx].clone();
+            shells.push(random_shell);
         }
     }
 
@@ -52,18 +71,18 @@ impl Shotgun {
         let all_shells = vec![
             Shell::Live,
             Shell::Blank,
-            Shell::Incendiary,
+            Shell::Poison,
             Shell::BeanBag,
-            Shell::Electric,
+            Shell::Taser,
             Shell::Imposter,
         ];
-        
+
         let weights = vec![
             10, //Live
             14, //Blank
-            2, //Incendiary
+            1, //Poison
             2, //BeanBag
-            2, //Electric
+            1, //Taser
             1, //Imposter
         ];
 
@@ -77,7 +96,11 @@ impl Shotgun {
             Shell::Blank,
         ];
 
-        self.load(all_shells, num_shells);
+        let weights = vec![
+            10, //Live
+            14, //Blank
+        ];
+        self.load(all_shells, weights, num_shells);
     }
 
     pub fn shoot(&self) -> Option<String>{
