@@ -1,5 +1,5 @@
 //shotgun.rs
-use rand::{ seq::SliceRandom, thread_rng, distributions::{WeightedIndex, Distribution} };
+use rand::{ Rng, seq::SliceRandom, thread_rng, distributions::{WeightedIndex, Distribution} };
 use std::cell::RefCell;
 
 #[derive(Debug, Default, Clone)]
@@ -26,7 +26,7 @@ pub enum ShotgunState {
     Reinforced, //Destruct shell becomes offensive but also destroys the shotgun
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub enum Shell {
     Live,
     #[default]
@@ -65,6 +65,13 @@ impl Shotgun {
             let idx = dist.sample(&mut rng);
             let random_shell = all_shells[idx].clone();
             shells.push(random_shell);
+        }
+
+        if !shells.is_empty(){
+            if !shells.contains(&Shell::Blank) {
+                let num: usize = rng.gen_range(0..shells.len());
+                shells[num] = Shell::Blank;
+            }
         }
     }
 

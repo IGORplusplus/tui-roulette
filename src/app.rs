@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::components::enums::ReloadAmount;
 
 use crate::event::{AppEvent, Event, EventHandler};
@@ -28,7 +30,7 @@ pub struct App {
     /// game data
     pub data: Data,
     /// log for popup texts
-    pub log: Vec<String>,
+    pub log: VecDeque<String>,
 }
 
 impl Default for App {
@@ -40,7 +42,7 @@ impl Default for App {
             counter: 0,
             events: EventHandler::new(),
             data: Data::new(),
-            log: Vec::new(),
+            log: VecDeque::new(),
         }
     }
 }
@@ -71,7 +73,11 @@ impl App {
                     },
                     AppEvent::Shoot => {
                         if let Some(msg) = self.data.shotgun.shoot() {
-                            self.log.push(msg);
+                            let max_size: usize = 10;
+                            if self.log.len() > max_size {
+                                self.log.pop_front();
+                            }
+                            self.log.push_back(msg);
                         }
                     }
                     AppEvent::Quit => self.quit(),
@@ -140,7 +146,7 @@ impl App {
         }
         if self.bool_log{
             let area = centered_rect(60, 20, frame.area());
-            let log_content = self.log.join("\n");
+            let log_content = self.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
             let log_popup = Paragraph::new(log_content)
                 .block(Block::default().title("Message Log").borders(Borders::ALL))
                 .wrap(Wrap {trim: true});
