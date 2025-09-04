@@ -108,8 +108,10 @@ impl App {
             }
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::Popup),
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
-            KeyCode::PageUp => self.events.send(AppEvent::ScrollUp),
-            KeyCode::PageDown => self.events.send(AppEvent::ScrollDown),
+            KeyCode::Char('j') => self.events.send(AppEvent::ScrollUp),
+            KeyCode::Char('k') => self.events.send(AppEvent::ScrollDown),
+            KeyCode::Tab => self.events.send(AppEvent::ForwardBlock),
+            KeyCode::Tab if key_events.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::BackBlock),
             KeyCode::Char('r' | 'R') => {
                 match self.data.round_count {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
