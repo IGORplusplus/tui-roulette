@@ -21,8 +21,6 @@ pub struct App {
     pub running: bool,
     //Is the popup showing?
     pub bool_popup: bool,
-    //Is the log showing?
-    pub bool_log: bool,
     /// Counter.
     pub counter: u8,
     /// Event handler.
@@ -31,6 +29,10 @@ pub struct App {
     pub data: Data,
     /// log for popup texts
     pub log: VecDeque<String>,
+    //Is the log showing?
+    pub bool_log: bool,
+    ///Where is the log scrolled to
+    pub log_scroll: u16,
 }
 
 impl Default for App {
@@ -38,11 +40,12 @@ impl Default for App {
         Self {
             running: true,
             bool_popup: false,
-            bool_log: false,
             counter: 0,
             events: EventHandler::new(),
             data: Data::new(),
             log: VecDeque::new(),
+            bool_log: false,
+            log_scroll: 0,
         }
     }
 }
@@ -64,10 +67,16 @@ impl App {
                     _ => {}
                 },
                 Event::App(app_event) => match app_event {
-                    AppEvent::Increment => self.increment_counter(),
-                    AppEvent::Decrement => self.decrement_counter(),
                     AppEvent::Popup => self.show_popup(),
                     AppEvent::Log => self.show_log(),
+                    AppEvent::ScrollUp => {
+                        if self.log_scroll > 0 {
+                            self.log_scroll -= 1;
+                        }
+                    }
+                    AppEvent::ScrollDown => {
+                        self.log_scroll += 1;
+                    }
                     AppEvent::Reload(amount) => {
                         self.data.shotgun.load_random_shells(amount.as_usize());
                     },
@@ -82,6 +91,9 @@ impl App {
                     }
                     AppEvent::Quit => self.quit(),
                 },
+                _ => {
+                    self.log.push_back("Failure to catch app event!".to_string());
+                }
             }
         }
         Ok(())
@@ -94,9 +106,10 @@ impl App {
             KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
             }
-            KeyCode::Right => self.events.send(AppEvent::Increment),
-            KeyCode::Left => self.events.send(AppEvent::Decrement),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::Popup),
+            KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
+            KeyCode::PageUp => self.events.send(AppEvent::ScrollUp),
+            KeyCode::PageDown => self.events.send(AppEvent::ScrollDown),
             KeyCode::Char('r' | 'R') => {
                 match self.data.round_count {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
@@ -107,12 +120,25 @@ impl App {
                     _ => self.events.send(AppEvent::Reload(ReloadAmount::Five)),
                 }
             }
-            KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
             KeyCode::Char(' ') => self.events.send(AppEvent::Shoot),
             // Other handlers you could add here.
             _ => {}
         }
         Ok(())
+    }
+
+    fn draw_log(&self, frame: &mut Frame) {
+        if self.bool_log{
+            let area = centered_rect(60, 20, frame.area());
+            let log_content = self.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
+            let log_popup = Paragraph::new(log_content)
+                .block(Block::default().title("Message Log").borders(Borders::ALL))
+                .wrap(Wrap {trim: true})
+                .scroll((self.log_scroll, 0));
+
+            frame.render_widget(Clear, area);
+            frame.render_widget(log_popup, area);
+        }
     }
 
     fn render_ui(&self, frame: &mut Frame){
@@ -144,16 +170,7 @@ impl App {
             frame.render_widget(Clear, area); // Clear background behind popup
             frame.render_widget(popup, chunks[0]);
         }
-        if self.bool_log{
-            let area = centered_rect(60, 20, frame.area());
-            let log_content = self.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
-            let log_popup = Paragraph::new(log_content)
-                .block(Block::default().title("Message Log").borders(Borders::ALL))
-                .wrap(Wrap {trim: true});
-
-            frame.render_widget(Clear, area);
-            frame.render_widget(log_popup, area);
-        }
+        self.draw_log(frame);
     }
 
     /// Handles the tick event of the terminal.
