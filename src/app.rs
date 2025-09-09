@@ -59,12 +59,12 @@ impl App {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn sendLog(mut self, message: Option<String>) {
+    pub fn sendLog(&mut self, message: Option<String>) {
         let max_size: usize = 10;
         if self.log.len() > max_size {
             self.log.pop_front();
         }
-        self.log.push_back(message);
+        self.log.push_back(message.unwrap());
     }
 
     /// Run the application's main loop.
@@ -119,8 +119,8 @@ impl App {
             }
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::Popup),
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
-            KeyCode::Char('j') => self.events.send(AppEvent::ScrollUp),
-            KeyCode::Char('k') => self.events.send(AppEvent::ScrollDown),
+            KeyCode::Char('k') => self.events.send(AppEvent::ScrollUp),
+            KeyCode::Char('j') => self.events.send(AppEvent::ScrollDown),
             KeyCode::Tab => self.events.send(AppEvent::ForwardBlock),
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::BackBlock),
             KeyCode::Char('r' | 'R') => {
