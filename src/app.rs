@@ -59,6 +59,13 @@ impl App {
     pub fn new() -> Self {
         Self::default()
     }
+    pub fn sendLog(mut self, message: Option<String>) {
+        let max_size: usize = 10;
+        if self.log.len() > max_size {
+            self.log.pop_front();
+        }
+        self.log.push_back(message);
+    }
 
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
@@ -90,17 +97,13 @@ impl App {
                     },
                     AppEvent::Shoot => {
                         if let Some(msg) = self.data.shotgun.shoot() {
-                            let max_size: usize = 10;
-                            if self.log.len() > max_size {
-                                self.log.pop_front();
-                            }
-                            self.log.push_back(msg);
+                            self.sendLog(Some(msg));
                         }
                     }
                     AppEvent::Quit => self.quit(),
                 },
                 _ => {
-                    self.log.push_back("Failure to catch app event!".to_string());
+                    self.sendLog(Some(String::from("Failure to catch event")));
                 }
             }
         }
