@@ -1,3 +1,11 @@
+#[derive(Default, Debug)]
+pub enum CurrentFocus {
+    #[default]
+    Unfocused,
+    Log,
+    Help,
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 pub enum ReloadAmount {
     #[default]

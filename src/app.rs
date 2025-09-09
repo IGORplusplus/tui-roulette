@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::components::enums::ReloadAmount;
+use crate::components::enums::CurrentFocus;
 
 use crate::event::{AppEvent, Event, EventHandler};
 use ratatui::{
@@ -33,6 +34,8 @@ pub struct App {
     pub bool_log: bool,
     ///Where is the log scrolled to
     pub log_scroll: u16,
+    ///Where the focus of the screen is on and where the key inputs are sent to
+    pub focused_widget: CurrentFocus,
 }
 
 impl Default for App {
@@ -46,6 +49,7 @@ impl Default for App {
             log: VecDeque::new(),
             bool_log: false,
             log_scroll: 0,
+            focused_widget: CurrentFocus::default(),
         }
     }
 }
@@ -76,6 +80,10 @@ impl App {
                     }
                     AppEvent::ScrollDown => {
                         self.log_scroll += 1;
+                    }
+                    AppEvent::ForwardBlock => {
+                    }
+                    AppEvent::BackBlock => {
                     }
                     AppEvent::Reload(amount) => {
                         self.data.shotgun.load_random_shells(amount.as_usize());
@@ -111,7 +119,7 @@ impl App {
             KeyCode::Char('j') => self.events.send(AppEvent::ScrollUp),
             KeyCode::Char('k') => self.events.send(AppEvent::ScrollDown),
             KeyCode::Tab => self.events.send(AppEvent::ForwardBlock),
-            KeyCode::Tab if key_events.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::BackBlock),
+            KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::BackBlock),
             KeyCode::Char('r' | 'R') => {
                 match self.data.round_count {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
