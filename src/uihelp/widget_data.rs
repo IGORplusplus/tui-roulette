@@ -87,7 +87,7 @@ impl WidgetData {
         let order = Self::order();
 
         // Find current focus index
-        let current_idx = order.iter().position(|&kind| self.get(kind).focus);
+        let current_idx = order.iter().position(|&kind| self.get(kind).focus );
 
         // Clear all focus
         for kind in order {
