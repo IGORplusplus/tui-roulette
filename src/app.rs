@@ -121,8 +121,8 @@ impl App {
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
             KeyCode::Char('k') => self.events.send(AppEvent::ScrollUp),
             KeyCode::Char('j') => self.events.send(AppEvent::ScrollDown),
-            KeyCode::Tab => self.events.send(AppEvent::ForwardBlock),
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::BackBlock),
+            KeyCode::Tab => self.events.send(AppEvent::ForwardBlock),
             KeyCode::Char('r' | 'R') => {
                 match self.data.round_count {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
