@@ -3,6 +3,7 @@ use crate::app::App;
 pub mod event;
 pub mod ui;
 pub mod components;
+pub mod uihelp;
 pub mod data;
 pub mod app;
 

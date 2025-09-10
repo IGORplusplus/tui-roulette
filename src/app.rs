@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::components::enums::ReloadAmount;
-use crate::components::enums::CurrentFocus;
+use crate::uihelp::widget_data::{WidgetData, WidgetKind};
 
 use crate::event::{AppEvent, Event, EventHandler};
 use ratatui::{
@@ -34,8 +34,8 @@ pub struct App {
     pub bool_log: bool,
     ///Where is the log scrolled to
     pub log_scroll: u16,
-    ///Where the focus of the screen is on and where the key inputs are sent to
-    pub focused_widget: CurrentFocus,
+    ///holds the information of the widgets
+    pub widget_data: WidgetData,
 }
 
 impl Default for App {
@@ -49,7 +49,7 @@ impl Default for App {
             log: VecDeque::new(),
             bool_log: false,
             log_scroll: 0,
-            focused_widget: CurrentFocus::default(),
+            widget_data: WidgetData::new(),
         }
     }
 }
@@ -78,8 +78,8 @@ impl App {
                     _ => {}
                 },
                 Event::App(app_event) => match app_event {
-                    AppEvent::Popup => self.show_popup(),
-                    AppEvent::Log => self.show_log(),
+                    AppEvent::Popup => self.widget_data.set_widget(WidgetKind::Popup, true, true),
+                    AppEvent::Log => self.widget_data.set_widget(WidgetKind::Log, true, true),
                     AppEvent::ScrollUp => {
                         if self.log_scroll > 0 {
                             self.log_scroll -= 1;

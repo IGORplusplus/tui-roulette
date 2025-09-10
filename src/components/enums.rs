@@ -1,7 +1,7 @@
 #[derive(Default, Debug)]
-pub enum CurrentFocus {
+pub enum Menu {
     #[default]
-    Unfocused,
+    Off,
     Log,
     Help,
 }
