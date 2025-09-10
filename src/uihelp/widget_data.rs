@@ -43,6 +43,28 @@ impl WidgetData {
         }
     }
 
+    pub fn is_displayed(&self, kind: WidgetKind) -> bool{
+        let widget_state = match kind {
+            WidgetKind::Log => &self.log,
+            WidgetKind::Popup => &self.popup,
+            WidgetKind::Inventory => &self.inventory,
+            WidgetKind::Player => &self.player,
+            WidgetKind::Shotgun => &self.shotgun,
+        };
+        widget_state.display
+    }
+
+    pub fn is_focused(&self, kind: WidgetKind) -> bool{
+        let widget_state = match kind {
+            WidgetKind::Log => &self.log,
+            WidgetKind::Popup => &self.popup,
+            WidgetKind::Inventory => &self.inventory,
+            WidgetKind::Player => &self.player,
+            WidgetKind::Shotgun => &self.shotgun,
+        };
+        widget_state.focus
+    }
+
     pub fn set_widget(&mut self, kind: WidgetKind, display_b: bool, focus_b: bool) {
         if focus_b {
             self.log.focus = false;

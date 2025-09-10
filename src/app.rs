@@ -20,8 +20,6 @@ use crate::data::Data;
 pub struct App {
     /// Is the application running?
     pub running: bool,
-    //Is the popup showing?
-    pub bool_popup: bool,
     /// Counter.
     pub counter: u8,
     /// Event handler.
@@ -30,8 +28,6 @@ pub struct App {
     pub data: Data,
     /// log for popup texts
     pub log: VecDeque<String>,
-    //Is the log showing?
-    pub bool_log: bool,
     ///Where is the log scrolled to
     pub log_scroll: u16,
     ///holds the information of the widgets
@@ -42,12 +38,10 @@ impl Default for App {
     fn default() -> Self {
         Self {
             running: true,
-            bool_popup: false,
             counter: 0,
             events: EventHandler::new(),
             data: Data::new(),
             log: VecDeque::new(),
-            bool_log: false,
             log_scroll: 0,
             widget_data: WidgetData::new(),
         }
@@ -59,7 +53,8 @@ impl App {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn sendLog(&mut self, message: Option<String>) {
+
+    pub fn send_log(&mut self, message: Option<String>) {
         let max_size: usize = 10;
         if self.log.len() > max_size {
             self.log.pop_front();
@@ -78,8 +73,20 @@ impl App {
                     _ => {}
                 },
                 Event::App(app_event) => match app_event {
-                    AppEvent::Popup => self.widget_data.set_widget(WidgetKind::Popup, true, true),
-                    AppEvent::Log => self.widget_data.set_widget(WidgetKind::Log, true, true),
+                    AppEvent::Popup => {
+                        if self.widget_data.is_displayed(WidgetKind::Popup) {
+                            self.widget_data.set_widget(WidgetKind::Popup, false, false)
+                        } else {
+                            self.widget_data.set_widget(WidgetKind::Popup, true, true)
+                        }
+                    },
+                    AppEvent::Log => {
+                        if self.widget_data.is_displayed(WidgetKind::Log) {
+                            self.widget_data.set_widget(WidgetKind::Log, false, false)
+                        } else {
+                            self.widget_data.set_widget(WidgetKind::Log, true, true)
+                        }
+                    },
                     AppEvent::ScrollUp => {
                         if self.log_scroll > 0 {
                             self.log_scroll -= 1;
@@ -97,13 +104,13 @@ impl App {
                     },
                     AppEvent::Shoot => {
                         if let Some(msg) = self.data.shotgun.shoot() {
-                            self.sendLog(Some(msg));
+                            self.send_log(Some(msg));
                         }
                     }
                     AppEvent::Quit => self.quit(),
                 },
                 _ => {
-                    self.sendLog(Some(String::from("Failure to catch event")));
+                    self.send_log(Some(String::from("Failure to catch event")));
                 }
             }
         }
@@ -140,20 +147,6 @@ impl App {
         Ok(())
     }
 
-    fn draw_log(&self, frame: &mut Frame) {
-        if self.bool_log{
-            let area = centered_rect(60, 20, frame.area());
-            let log_content = self.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
-            let log_popup = Paragraph::new(log_content)
-                .block(Block::default().title("Message Log").borders(Borders::ALL))
-                .wrap(Wrap {trim: true})
-                .scroll((self.log_scroll, 0));
-
-            frame.render_widget(Clear, area);
-            frame.render_widget(log_popup, area);
-        }
-    }
-
     fn render_ui(&self, frame: &mut Frame){
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -170,7 +163,7 @@ impl App {
             .borders(Borders::ALL);
         frame.render_widget(main_block, frame.area());
         // Draw popup if enabled
-        if self.bool_popup {
+        if self.widget_data.is_displayed(WidgetKind::Popup) {
             let area = centered_rect(60, 20, frame.area());
 
             let popup_text = format!(
@@ -183,7 +176,17 @@ impl App {
             frame.render_widget(Clear, area); // Clear background behind popup
             frame.render_widget(popup, chunks[0]);
         }
-        self.draw_log(frame);
+        if self.widget_data.is_displayed(WidgetKind::Log) {
+            let area = centered_rect(60, 20, frame.area());
+            let log_content = self.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
+            let log_popup = Paragraph::new(log_content)
+                .block(Block::default().title("Message Log").borders(Borders::ALL))
+                .wrap(Wrap {trim: true})
+                .scroll((self.log_scroll, 0));
+
+            frame.render_widget(Clear, area);
+            frame.render_widget(log_popup, area);
+        }
     }
 
     /// Handles the tick event of the terminal.
@@ -195,22 +198,6 @@ impl App {
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
         self.running = false;
-    }
-
-    pub fn increment_counter(&mut self) {
-        self.counter = self.counter.saturating_add(1);
-    }
-
-    pub fn decrement_counter(&mut self) {
-        self.counter = self.counter.saturating_sub(1);
-    }
-
-    pub fn show_popup(&mut self) {
-        self.bool_popup = !self.bool_popup;
-    }
-
-    pub fn show_log(&mut self) {
-        self.bool_log = !self.bool_log;
     }
 }
 
