@@ -35,6 +35,13 @@ pub enum Event {
 pub enum AppEvent {
     /// Quit the application.
     Quit,
+    /// Reload
+    Reload(ReloadAmount),
+    /// Shoot
+    Shoot,
+
+
+    ///UI
     /// Popup screen
     Popup,
     /// Show log
@@ -43,14 +50,10 @@ pub enum AppEvent {
     ScrollUp,
     /// Scroll the log down
     ScrollDown,
-    ///so I can interact with a different screen
-    ForwardBlock,
-    ///so I can interact with the previous screen
-    BackBlock,
-    /// Reload
-    Reload(ReloadAmount),
-    /// Shoot
-    Shoot,
+    /// Change focus
+    ChangeFocus,
+    /// Change focus back
+    ChangeFocusBack,
 }
 
 /// Terminal event handler.

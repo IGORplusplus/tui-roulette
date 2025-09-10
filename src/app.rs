@@ -26,12 +26,12 @@ pub struct App {
     pub events: EventHandler,
     /// game data
     pub data: Data,
+    ///holds the information of the widgets
+    pub widget_data: WidgetData,
     /// log for popup texts
     pub log: VecDeque<String>,
     ///Where is the log scrolled to
     pub log_scroll: u16,
-    ///holds the information of the widgets
-    pub widget_data: WidgetData,
 }
 
 impl Default for App {
@@ -73,6 +73,15 @@ impl App {
                     _ => {}
                 },
                 Event::App(app_event) => match app_event {
+                    AppEvent::Quit => self.quit(),
+                    AppEvent::Reload(amount) => {
+                        self.data.shotgun.load_random_shells(amount.as_usize());
+                    },
+                    AppEvent::Shoot => {
+                        if let Some(msg) = self.data.shotgun.shoot() {
+                            self.send_log(Some(msg));
+                        }
+                    },
                     AppEvent::Popup => {
                         if self.widget_data.is_displayed(WidgetKind::Popup) {
                             self.widget_data.set_widget(WidgetKind::Popup, false, false)
@@ -91,27 +100,20 @@ impl App {
                         if self.log_scroll > 0 {
                             self.log_scroll -= 1;
                         }
-                    }
+                    },
                     AppEvent::ScrollDown => {
                         self.log_scroll += 1;
-                    }
-                    AppEvent::ForwardBlock => {
-                    }
-                    AppEvent::BackBlock => {
-                    }
-                    AppEvent::Reload(amount) => {
-                        self.data.shotgun.load_random_shells(amount.as_usize());
                     },
-                    AppEvent::Shoot => {
-                        if let Some(msg) = self.data.shotgun.shoot() {
-                            self.send_log(Some(msg));
-                        }
-                    }
-                    AppEvent::Quit => self.quit(),
+                    AppEvent::ChangeFocus => {
+                        self.widget_data.focus_next();
+                    },
+                    AppEvent::ChangeFocusBack => {
+                        self.widget_data.focus_prev();
+                    },
+                    _ => {
+                        self.send_log(Some(String::from("Failure to catch event")));
+                    },
                 },
-                _ => {
-                    self.send_log(Some(String::from("Failure to catch event")));
-                }
             }
         }
         Ok(())
@@ -126,10 +128,10 @@ impl App {
             }
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::Popup),
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
-            KeyCode::Char('k') => self.events.send(AppEvent::ScrollUp),
-            KeyCode::Char('j') => self.events.send(AppEvent::ScrollDown),
-            KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::BackBlock),
-            KeyCode::Tab => self.events.send(AppEvent::ForwardBlock),
+            KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
+            KeyCode::Char('j') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollDown),
+            KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
+            KeyCode::Tab => self.events.send(AppEvent::ChangeFocus),
             KeyCode::Char('r' | 'R') => {
                 match self.data.round_count {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
