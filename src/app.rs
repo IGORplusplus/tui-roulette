@@ -2,12 +2,13 @@ use std::collections::VecDeque;
 
 use crate::components::enums::ReloadAmount;
 use crate::uihelp::widget_data::{WidgetData, WidgetKind};
+use crate::ui;
 
 use crate::event::{AppEvent, Event, EventHandler};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{ Color, Style, Stylize },
-    widgets::{Block, Borders, Clear, Paragraph, Wrap, BorderType},
+    /* style::{ Color, Style, Stylize },
+    widgets::{Block, Borders, Clear, Paragraph, Wrap, BorderType}, */
     Frame,
     DefaultTerminal,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers, self},
@@ -150,45 +151,7 @@ impl App {
     }
 
     fn render_ui(&self, frame: &mut Frame){
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .margin(2)
-            .constraints([
-                Constraint::Length(3),
-                Constraint::Min(0),
-            ])
-            .split(frame.area());
-        let main_block = Block::default()
-            .title("Main UI - Press 'p' for popup, 'l' for log")
-            .border_style(Style::default().fg(Color::Red))
-            .border_type(BorderType::Rounded)
-            .borders(Borders::ALL);
-        frame.render_widget(main_block, frame.area());
-        // Draw popup if enabled
-        if self.widget_data.is_displayed(WidgetKind::Popup) {
-            let area = centered_rect(60, 20, frame.area());
-
-            let popup_text = format!(
-                "Data: {:?} Counter: {}", self.data, self.counter,
-            );
-            let popup = Paragraph::new(popup_text)
-                .block(Block::default().title("Popup").borders(Borders::ALL))
-                .wrap(Wrap { trim: true });
-
-            frame.render_widget(Clear, area); // Clear background behind popup
-            frame.render_widget(popup, chunks[0]);
-        }
-        if self.widget_data.is_displayed(WidgetKind::Log) {
-            let area = centered_rect(60, 20, frame.area());
-            let log_content = self.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
-            let log_popup = Paragraph::new(log_content)
-                .block(Block::default().title("Message Log").borders(Borders::ALL))
-                .wrap(Wrap {trim: true})
-                .scroll((self.log_scroll, 0));
-
-            frame.render_widget(Clear, area);
-            frame.render_widget(log_popup, area);
-        }
+        ui::render_ui(self, frame);
     }
 
     /// Handles the tick event of the terminal.

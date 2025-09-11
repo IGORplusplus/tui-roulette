@@ -2,38 +2,72 @@ use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
     style::{Color, Stylize},
-    widgets::{Block, BorderType, Paragraph, Widget},
+    widgets::{Block, BorderType, Paragraph, Widget, Borders, Wrap, Clear},
+    prelude::*,
 };
 
-use crate::app::App;
+use crate::uihelp::widget_data::{WidgetKind, WidgetData};
 
-impl Widget for &App {
-    /// Renders the user interface widgets.
-    ///
-    // This is where you add new widgets.
-    // See the following resources:
-    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
-    // - https://github.com/ratatui/ratatui/tree/master/examples
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let block = Block::bordered()
-            .title("cli-roulette")
-            .title_alignment(Alignment::Center)
-            .border_type(BorderType::Rounded);
+use crate::app::{ App };
 
-        let text = format!(
-            "This is a tui template.\n\
-                Press `Esc`, `Ctrl-C` or `q` to stop running.\n\
-                Press left and right to increment and decrement the counter respectively.\n\
-                Counter: {}",
-            self.counter
+fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
+    let vertical = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(area);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(vertical[1])[1]
+}
+
+pub fn render_ui(app: &App, frame: &mut Frame){
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(2)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(0),
+        ])
+        .split(frame.area());
+    let main_block = Block::default()
+        .title("Main UI - Press 'p' for popup, 'l' for log")
+        .border_style(Style::default().fg(Color::Red))
+        .border_type(BorderType::Rounded)
+        .borders(Borders::ALL);
+    frame.render_widget(main_block, frame.area());
+    // Draw popup if enabled
+    if app.widget_data.is_displayed(WidgetKind::Popup) {
+        let area = centered_rect(60, 20, frame.area());
+
+        let popup_text = format!(
+            "Data: {:?} Counter: {}", app.data, app.counter,
         );
+        let popup = Paragraph::new(popup_text)
+            .block(Block::default().title("Popup").borders(Borders::ALL))
+            .wrap(Wrap { trim: true });
 
-        let paragraph = Paragraph::new(text)
-            .block(block)
-            .fg(Color::Cyan)
-            .bg(Color::Black)
-            .centered();
+        frame.render_widget(Clear, area); // Clear background behind popup
+        frame.render_widget(popup, chunks[0]);
+    }
+    if app.widget_data.is_displayed(WidgetKind::Log) {
+        let area = centered_rect(60, 20, frame.area());
+        let log_content = app.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
+        let log_popup = Paragraph::new(log_content)
+            .block(Block::default().title("Message Log").borders(Borders::ALL))
+            .wrap(Wrap {trim: true})
+            .scroll((app.log_scroll, 0));
 
-        paragraph.render(area, buf);
+        frame.render_widget(Clear, area);
+        frame.render_widget(log_popup, area);
     }
 }
