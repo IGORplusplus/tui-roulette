@@ -35,17 +35,25 @@ pub enum Event {
 pub enum AppEvent {
     /// Quit the application.
     Quit,
+
+    ///GAME EVENTS
     /// Reload
     Reload(ReloadAmount),
     /// Shoot
     Shoot,
 
 
-    ///UI
-    /// Popup screen
-    Popup,
+    ///UI EVENTS
+   /// Popup screen
+    ShowPopup,
     /// Show log
-    Log,
+    ShowLog,
+    /// Show inventory
+    ShowInventory,
+    /// Show player
+    ShowPlayer,
+    /// Show shotgun
+    ShowShotgun,
     /// Scroll the log up
     ScrollUp,
     /// Scroll the log down

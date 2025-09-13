@@ -83,18 +83,39 @@ impl App {
                             self.send_log(Some(msg));
                         }
                     },
-                    AppEvent::Popup => {
+                    AppEvent::ShowPopup => {
                         if self.widget_data.is_displayed(WidgetKind::Popup) {
                             self.widget_data.set_widget(WidgetKind::Popup, false, false)
                         } else {
                             self.widget_data.set_widget(WidgetKind::Popup, true, true)
                         }
                     },
-                    AppEvent::Log => {
+                    AppEvent::ShowLog => {
                         if self.widget_data.is_displayed(WidgetKind::Log) {
                             self.widget_data.set_widget(WidgetKind::Log, false, false)
                         } else {
                             self.widget_data.set_widget(WidgetKind::Log, true, true)
+                        }
+                    },
+                    AppEvent::ShowInventory => {
+                        if self.widget_data.is_displayed(WidgetKind::Inventory) {
+                            self.widget_data.set_widget(WidgetKind::Inventory, false, false)
+                        } else {
+                            self.widget_data.set_widget(WidgetKind::Inventory, true, true)
+                        }
+                    },
+                    AppEvent::ShowPlayer => {
+                        if self.widget_data.is_displayed(WidgetKind::Player) {
+                            self.widget_data.set_widget(WidgetKind::Player, false, false)
+                        } else {
+                            self.widget_data.set_widget(WidgetKind::Player, true, true)
+                        }
+                    },
+                    AppEvent::ShowShotgun => {
+                        if self.widget_data.is_displayed(WidgetKind::Shotgun) {
+                            self.widget_data.set_widget(WidgetKind::Shotgun, false, false)
+                        } else {
+                            self.widget_data.set_widget(WidgetKind::Shotgun, true, true)
                         }
                     },
                     AppEvent::ScrollUp => {
@@ -127,8 +148,11 @@ impl App {
             KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
             }
-            KeyCode::Char('p' | 'P') => self.events.send(AppEvent::Popup),
-            KeyCode::Char('l' | 'L') => self.events.send(AppEvent::Log),
+            KeyCode::Char('d' | 'D') => self.events.send(AppEvent::ShowPopup),
+            KeyCode::Char('l' | 'L') => self.events.send(AppEvent::ShowLog),
+            KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
+            KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPlayer),
+            KeyCode::Char('s' | 'S') => self.events.send(AppEvent::ShowShotgun),
             KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
             KeyCode::Char('j') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollDown),
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
@@ -164,24 +188,4 @@ impl App {
     pub fn quit(&mut self) {
         self.running = false;
     }
-}
-
-fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
-    let vertical = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(area);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(vertical[1])[1]
 }
