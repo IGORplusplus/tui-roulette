@@ -1,3 +1,4 @@
+//std library
 use std::collections::VecDeque;
 
 use crate::components::enums::ReloadAmount;
@@ -5,15 +6,20 @@ use crate::uihelp::widget_data::{WidgetData, WidgetKind};
 use crate::ui;
 
 use crate::event::{AppEvent, Event, EventHandler};
+use crossterm::event::EnableMouseCapture;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     /* style::{ Color, Style, Stylize },
     widgets::{Block, Borders, Clear, Paragraph, Wrap, BorderType}, */
     Frame,
     DefaultTerminal,
-    crossterm::event::{KeyCode, KeyEvent, KeyModifiers, self},
+    crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseButton, MouseEventKind, self},
 };
 
+//crossterm
+use crossterm::terminal::{enable_raw_mode, disable_raw_mode};
+
+//user made ones
 use crate::data::Data;
 
 /// Application.
@@ -65,12 +71,16 @@ impl App {
 
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
+        crossterm::terminal::enable_raw_mode()?;
+        crossterm::execute!(std::io::stdout(), EnableMouseCapture)?;
+
         while self.running {
             terminal.draw(|frame| self.render_ui(frame))?;
             match self.events.next().await? {
                 Event::Tick => self.tick(),
                 Event::Crossterm(event) => match event {
                     crossterm::event::Event::Key(key_event) => self.handle_key_events(key_event)?,
+                    crossterm::event::Event::Mouse(mouse_event) => self.handle_mouse_events(mouse_event)?,
                     _ => {}
                 },
                 Event::App(app_event) => match app_event {
@@ -170,6 +180,28 @@ impl App {
             KeyCode::Char(' ') => self.events.send(AppEvent::Shoot),
             // Other handlers you could add here.
             _ => {}
+        }
+        Ok(())
+    }
+
+    pub fn handle_mouse_events(&mut self, mouse_event: MouseEvent) -> color_eyre::Result<()> {
+        match mouse_event.kind {
+            MouseEventKind::ScrollUp => {
+                self.send_log(Some("scrolling up".to_string()));
+                self.events.send(AppEvent::ScrollUp)
+            },
+            MouseEventKind::Drag(mouse_button) => {
+                match mouse_button {
+                    MouseButton::Left => {
+                        self.send_log(Some("left dragging".to_string()));
+                    },
+                    _ => {
+                        self.send_log(Some("some other dragging".to_string()));
+                    },
+                }
+            },
+            _ => {
+            }
         }
         Ok(())
     }
