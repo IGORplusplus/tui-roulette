@@ -1,11 +1,13 @@
 use std::rc::Rc;
 
 use ratatui::{
-    buffer::Buffer, layout::{Alignment, Rect}, prelude::*, style::{Color, Styled, Stylize}, widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget, Wrap}
+    buffer::Buffer, symbols, layout::{Alignment, Rect}, prelude::*, style::{Color, Styled, Stylize}, widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget, Wrap, Canvas, Line}
 };
 
-use crate::uihelp::widget_data::{WidgetKind, WidgetData};
+//add svg crate
+use svg::{Tree, NodeKind};
 
+use crate::uihelp::widget_data::{WidgetKind, WidgetData};
 use crate::app::{ App };
 
 fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
