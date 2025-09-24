@@ -10,6 +10,21 @@ use ratatui::{
 use crate::uihelp::widget_data::{WidgetKind, WidgetData};
 use crate::app::{ App };
 
+const PLAYER_ART: &str = r#"
+ (\_/)
+ ( •_•)
+/>🍪
+"#;
+
+const SHOTGUN_ART: &str = r#"
+ ,______________________________________       
+|_________________,----------._ [____]  ""-,__  __....-----=====
+               (_(||||||||||||)___________/   ""                |
+                  `----------' Krogg98[ ))"-,                   |
+                                       ""    `,  _,--....___    |
+                                               `/           """"
+"#;
+
 fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
     let vertical = Layout::default()
         .direction(Direction::Vertical)
@@ -59,10 +74,10 @@ pub fn render_ui(app: &App, frame: &mut Frame){
         if state.display {
             match kind {
                 WidgetKind::Data => render_data_popup(app, frame),
-                WidgetKind::Log => render_log_popup(app, frame, &chunks),
+                WidgetKind::Log => render_log_popup(app, frame),
                 WidgetKind::Inventory => render_inventory_popup(app, frame, &chunks),
-                WidgetKind::Player => render_player_popup(app, frame, &chunks),
-                WidgetKind::Shotgun => render_shotgun_popup(app, frame, &chunks),
+                WidgetKind::Player => render_player_popup(app, frame),
+                WidgetKind::Shotgun => render_shotgun_popup(app, frame),
             }
         }
     }
@@ -97,19 +112,31 @@ fn render_data_popup(app: &App, frame: &mut Frame) {
 }
 
 
-fn render_log_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
-    let area = chunks[1];
+fn render_log_popup(app: &App, frame: &mut Frame) {
+    let area = frame.area();
+    let width = (area.width as f32 * 0.33) as u16;
+    let height = (area.height as f32 * 0.75) as u16;
+    let x = (area.width.saturating_sub(width)) / 2;
+    let y = (area.height.saturating_sub(height)) / 2;
+
+    let area = Rect {
+        x,
+        y,
+        width,
+        height,
+    };
+
     let log_content = app.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
     let mut log_popup = Paragraph::new(log_content)
-        .block(Block::default().title("Message Log").borders(Borders::ALL))
+        .block(Block::default().title("Message Log - use j k to navigate").borders(Borders::ALL))
         .wrap(Wrap {trim: true})
         .scroll((app.log_scroll, 0));
     if app.widget_data.is_focused(WidgetKind::Log) {
-        log_popup = log_popup.set_style(Style::default().fg(Color::LightRed))
+        log_popup = log_popup.set_style(Style::default().fg(Color::LightRed));
     }
 
     frame.render_widget(Clear, area);
-    frame.render_widget(log_popup, chunks[1]);
+    frame.render_widget(log_popup, area);
 }
 
 
@@ -128,32 +155,45 @@ fn render_inventory_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
     frame.render_widget(log_popup, chunks[2]);
 }
 
-fn render_player_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
-    let area = chunks[3];
-    let log_content = app.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
-    let mut log_popup = Paragraph::new(log_content)
-        .block(Block::default().title("Message Log").borders(Borders::ALL))
-        .wrap(Wrap {trim: true})
-        .scroll((app.log_scroll, 0));
-    if app.widget_data.is_focused(WidgetKind::Player) {
-        log_popup = log_popup.set_style(Style::default().fg(Color::LightRed))
+fn render_player_popup(app: &App, frame: &mut Frame) {
+
+    let area = Rect {
+        x: 10,
+        y: 5,
+        width: 10,
+        height: 10,
+    };
+
+    // The "icon" — can be emoji, unicode, ASCII art, etc.
+
+    let mut player_popup = Paragraph::new(PLAYER_ART)
+        .block(Block::default().title("Popup").borders(Borders::NONE));
+    if app.widget_data.is_focused(WidgetKind::Data) {
+        player_popup = player_popup.set_style(Style::default().fg(Color::LightRed))
     }
 
     frame.render_widget(Clear, area);
-    frame.render_widget(log_popup, chunks[3]);
+    frame.render_widget(player_popup, area);
 }
 
-fn render_shotgun_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
-    let area = chunks[4];
-    let log_content = app.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
-    let mut log_popup = Paragraph::new(log_content)
-        .block(Block::default().title("Message Log").borders(Borders::ALL))
-        .wrap(Wrap {trim: true})
-        .scroll((app.log_scroll, 0));
+fn render_shotgun_popup(app: &App, frame: &mut Frame) {
+    let frame_area = frame.area();
+    let w = 68;
+    let h = 10;
+    let w = w.min(frame_area.width);
+    let h = h.min(frame_area.height);
+
+    let x = frame_area.x + (frame_area.width - w) / 2;
+    let y = frame_area.y + (frame_area.height - h) / 2;
+
+    let area = Rect { x, y, width: w, height: h };
+    let mut shotgun_popup = Paragraph::new(SHOTGUN_ART)
+        .block(Block::default().borders(Borders::empty()));
+
     if app.widget_data.is_focused(WidgetKind::Shotgun) {
-        log_popup = log_popup.set_style(Style::default().fg(Color::LightRed))
+        shotgun_popup = shotgun_popup.set_style(Style::default().fg(Color::LightRed))
     }
 
     frame.render_widget(Clear, area);
-    frame.render_widget(log_popup, chunks[4]);
+    frame.render_widget(shotgun_popup, area);
 }

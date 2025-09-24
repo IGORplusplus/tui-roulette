@@ -175,12 +175,12 @@ impl App {
     pub fn handle_key_events(&mut self, key_event: KeyEvent) -> color_eyre::Result<()> {
         match key_event.code {
             KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
-            KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
+            KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
             }
             KeyCode::Char('d' | 'D') => self.events.send(AppEvent::ShowData),
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::ShowLog),
-            KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
+            //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPlayer),
             KeyCode::Char('s' | 'S') => self.events.send(AppEvent::ShowShotgun),
             KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
