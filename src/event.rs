@@ -45,7 +45,7 @@ pub enum AppEvent {
 
     ///UI EVENTS
    /// Popup screen
-    ShowPopup,
+    ShowData,
     /// Show log
     ShowLog,
     /// Show inventory

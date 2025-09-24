@@ -93,39 +93,59 @@ impl App {
                             self.send_log(Some(msg));
                         }
                     },
-                    AppEvent::ShowPopup => {
-                        if self.widget_data.is_displayed(WidgetKind::Popup) {
-                            self.widget_data.set_widget(WidgetKind::Popup, false, false)
+                    AppEvent::ShowData => {
+                        if self.widget_data.is_displayed(WidgetKind::Data) {
+                            self.widget_data.set_widget(WidgetKind::Data, false, false);
+                            self.widget_data
+                                .render_stack
+                                .retain(|k| *k != WidgetKind::Data);
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Popup, true, true)
+                            self.widget_data.set_widget(WidgetKind::Data, true, true);
+                            self.widget_data.render_stack.push(WidgetKind::Data)
                         }
                     },
                     AppEvent::ShowLog => {
                         if self.widget_data.is_displayed(WidgetKind::Log) {
-                            self.widget_data.set_widget(WidgetKind::Log, false, false)
+                            self.widget_data.set_widget(WidgetKind::Log, false, false);
+                            self.widget_data
+                                .render_stack
+                                .retain(|k| *k != WidgetKind::Log);
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Log, true, true)
+                            self.widget_data.set_widget(WidgetKind::Log, true, true);
+                            self.widget_data.render_stack.push(WidgetKind::Log)
                         }
                     },
                     AppEvent::ShowInventory => {
                         if self.widget_data.is_displayed(WidgetKind::Inventory) {
-                            self.widget_data.set_widget(WidgetKind::Inventory, false, false)
+                            self.widget_data.set_widget(WidgetKind::Inventory, false, false);
+                            self.widget_data
+                                .render_stack
+                                .retain(|k| *k != WidgetKind::Inventory);
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Inventory, true, true)
+                            self.widget_data.set_widget(WidgetKind::Inventory, true, true);
+                            self.widget_data.render_stack.push(WidgetKind::Inventory)
                         }
                     },
                     AppEvent::ShowPlayer => {
                         if self.widget_data.is_displayed(WidgetKind::Player) {
-                            self.widget_data.set_widget(WidgetKind::Player, false, false)
+                            self.widget_data.set_widget(WidgetKind::Player, false, false);
+                            self.widget_data
+                                .render_stack
+                                .retain(|k| *k != WidgetKind::Player);
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Player, true, true)
+                            self.widget_data.set_widget(WidgetKind::Player, true, true);
+                            self.widget_data.render_stack.push(WidgetKind::Player)
                         }
                     },
                     AppEvent::ShowShotgun => {
                         if self.widget_data.is_displayed(WidgetKind::Shotgun) {
-                            self.widget_data.set_widget(WidgetKind::Shotgun, false, false)
+                            self.widget_data.set_widget(WidgetKind::Shotgun, false, false);
+                            self.widget_data
+                                .render_stack
+                                .retain(|k| *k != WidgetKind::Shotgun);
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Shotgun, true, true)
+                            self.widget_data.set_widget(WidgetKind::Shotgun, true, true);
+                            self.widget_data.render_stack.push(WidgetKind::Shotgun)
                         }
                     },
                     AppEvent::ScrollUp => {
@@ -158,7 +178,7 @@ impl App {
             KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
             }
-            KeyCode::Char('d' | 'D') => self.events.send(AppEvent::ShowPopup),
+            KeyCode::Char('d' | 'D') => self.events.send(AppEvent::ShowData),
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::ShowLog),
             KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPlayer),

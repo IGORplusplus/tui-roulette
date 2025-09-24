@@ -31,6 +31,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
 }
 
 pub fn render_ui(app: &App, frame: &mut Frame){
+    //will eventually get rid of this
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         // .margin(2)
@@ -51,26 +52,23 @@ pub fn render_ui(app: &App, frame: &mut Frame){
         .borders(Borders::ALL);
 
     frame.render_widget(&border, frame.area());
-    // Draw popup if enabled
-    if app.widget_data.is_displayed(WidgetKind::Popup) {
-        render_data_popup(app, frame, &chunks);
-    }
-    if app.widget_data.is_displayed(WidgetKind::Log) {
-        render_log_popup(app, frame, &chunks);
-    }
-    if app.widget_data.is_displayed(WidgetKind::Inventory) {
-        render_inventory_popup(app, frame, &chunks);
-    }
-    if app.widget_data.is_displayed(WidgetKind::Player) {
-        render_player_popup(app, frame, &chunks);
-    }
-    if app.widget_data.is_displayed(WidgetKind::Shotgun) {
-        render_shotgun_popup(app, frame, &chunks);
-    }
 
+    // does it in order of the "stack"
+    for kind in &app.widget_data.render_stack {
+        let state = app.widget_data.get_state(*kind);
+        if state.display {
+            match kind {
+                WidgetKind::Data => render_data_popup(app, frame),
+                WidgetKind::Log => render_log_popup(app, frame, &chunks),
+                WidgetKind::Inventory => render_inventory_popup(app, frame, &chunks),
+                WidgetKind::Player => render_player_popup(app, frame, &chunks),
+                WidgetKind::Shotgun => render_shotgun_popup(app, frame, &chunks),
+            }
+        }
+    }
 }
 
-fn render_data_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
+fn render_data_popup(app: &App, frame: &mut Frame) {
     let term_area = frame.area();
     let term_width = term_area.width;
     let term_height = term_area.height;
@@ -91,12 +89,13 @@ fn render_data_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
     let mut data_popup = Paragraph::new(popup_content)
         .block(Block::default().title("Popup").borders(Borders::ALL))
         .wrap(Wrap { trim: true });
-    if app.widget_data.is_focused(WidgetKind::Popup) {
+    if app.widget_data.is_focused(WidgetKind::Data) {
         data_popup = data_popup.set_style(Style::default().fg(Color::LightRed))
     }
     frame.render_widget(Clear, area); // Clear background behind popup
     frame.render_widget(data_popup, area);
 }
+
 
 fn render_log_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
     let area = chunks[1];
@@ -112,6 +111,7 @@ fn render_log_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
     frame.render_widget(Clear, area);
     frame.render_widget(log_popup, chunks[1]);
 }
+
 
 fn render_inventory_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
     let area = chunks[2];

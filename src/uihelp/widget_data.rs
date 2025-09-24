@@ -1,15 +1,30 @@
 //widget-data.rs
-#[derive(Debug)]
+use ratatui::layout::Rect;
+
+#[derive(Debug, Clone)]
 pub struct WidgetState {
-    display: bool,
+    pub display: bool,
     focus: bool,
+    area: Option<Rect>,
+    content: Option<String>,
 }
 
 impl WidgetState {
-    pub fn new() -> WidgetState {
+    pub fn new_blank() -> WidgetState {
         WidgetState {
             display: false,
             focus: false,
+            area: None,
+            content: None
+        }
+    }
+
+    pub fn new_content(area: Rect, content: String) -> WidgetState{
+        WidgetState {
+            display: true,
+            focus: true,
+            area: Some(area),
+            content: Some(content),
         }
     }
 }
@@ -17,7 +32,7 @@ impl WidgetState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WidgetKind {
     Log,
-    Popup,
+    Data,
     Inventory,
     Player,
     Shotgun,
@@ -25,30 +40,36 @@ pub enum WidgetKind {
 
 #[derive(Debug)]
 pub struct WidgetData{
+    //these are a little redundant
     log: WidgetState,
-    popup: WidgetState,
+    data: WidgetState,
     inventory: WidgetState,
     player: WidgetState,
     shotgun: WidgetState,
     current_focus: Option<WidgetKind>,
+
+    //render last in list first
+    pub render_stack: Vec<WidgetKind>,
 }
 
 impl WidgetData {
     pub fn new() -> WidgetData {
         WidgetData {
-            log: WidgetState::new(),
-            popup: WidgetState::new(),
-            inventory: WidgetState::new(),
-            player: WidgetState::new(),
-            shotgun: WidgetState::new(),
+            log: WidgetState::new_blank(),
+            data: WidgetState::new_blank(),
+            inventory: WidgetState::new_blank(),
+            player: WidgetState::new_blank(),
+            shotgun: WidgetState::new_blank(),
             current_focus: None,
+
+            render_stack: Vec::new(),
         }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (WidgetKind, &WidgetState)> {
         [
             (WidgetKind::Log, &self.log),
-            (WidgetKind::Popup, &self.popup),
+            (WidgetKind::Data, &self.data),
             (WidgetKind::Inventory, &self.inventory),
             (WidgetKind::Player, &self.player),
             (WidgetKind::Shotgun, &self.shotgun),
@@ -65,7 +86,7 @@ impl WidgetData {
     fn order() -> [WidgetKind; 5] {
         [
             WidgetKind::Log,
-            WidgetKind::Popup,
+            WidgetKind::Data,
             WidgetKind::Inventory,
             WidgetKind::Player,
             WidgetKind::Shotgun,
@@ -75,7 +96,7 @@ impl WidgetData {
     fn get_mut(&mut self, kind: WidgetKind) -> &mut WidgetState {
         match kind {
             WidgetKind::Log => &mut self.log,
-            WidgetKind::Popup => &mut self.popup,
+            WidgetKind::Data => &mut self.data,
             WidgetKind::Inventory => &mut self.inventory,
             WidgetKind::Player => &mut self.player,
             WidgetKind::Shotgun => &mut self.shotgun,
@@ -141,7 +162,7 @@ impl WidgetData {
     fn get(&self, kind: WidgetKind) -> &WidgetState {
         match kind {
             WidgetKind::Log => &self.log,
-            WidgetKind::Popup => &self.popup,
+            WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
             WidgetKind::Player => &self.player,
             WidgetKind::Shotgun => &self.shotgun,
@@ -151,7 +172,7 @@ impl WidgetData {
     pub fn is_displayed(&self, kind: WidgetKind) -> bool{
         let widget_state = match kind {
             WidgetKind::Log => &self.log,
-            WidgetKind::Popup => &self.popup,
+            WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
             WidgetKind::Player => &self.player,
             WidgetKind::Shotgun => &self.shotgun,
@@ -162,7 +183,7 @@ impl WidgetData {
     pub fn is_focused(&self, kind: WidgetKind) -> bool{
         let widget_state = match kind {
             WidgetKind::Log => &self.log,
-            WidgetKind::Popup => &self.popup,
+            WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
             WidgetKind::Player => &self.player,
             WidgetKind::Shotgun => &self.shotgun,
@@ -170,10 +191,20 @@ impl WidgetData {
         widget_state.focus
     }
 
+    pub fn get_state(&self, kind: WidgetKind) -> &WidgetState {
+        match kind {
+            WidgetKind::Log => &self.log,
+            WidgetKind::Data => &self.data,
+            WidgetKind::Inventory => &self.inventory,
+            WidgetKind::Player => &self.player,
+            WidgetKind::Shotgun => &self.shotgun,
+        }
+    }
+
     pub fn set_widget(&mut self, kind: WidgetKind, display_b: bool, focus_b: bool) {
         if focus_b {
             self.log.focus = false;
-            self.popup.focus = false;
+            self.data.focus = false;
             self.inventory.focus = false;
             self.player.focus = false;
             self.shotgun.focus = false;
@@ -181,7 +212,7 @@ impl WidgetData {
 
         let widget_to_modify = match kind {
             WidgetKind::Log => &mut self.log,
-            WidgetKind::Popup => &mut self.popup,
+            WidgetKind::Data => &mut self.data,
             WidgetKind::Inventory => &mut self.inventory,
             WidgetKind::Player => &mut self.player,
             WidgetKind::Shotgun => &mut self.shotgun,
@@ -195,7 +226,7 @@ impl WidgetData {
 
     pub fn change_focus(&mut self, next: bool) {
         self.log.focus = false;
-        self.popup.focus = false;
+        self.data.focus = false;
         self.inventory.focus = false;
         self.player.focus = false;
         self.shotgun.focus = false;
