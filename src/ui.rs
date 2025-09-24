@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
 use ratatui::{
-    buffer::Buffer, symbols, layout::{Alignment, Rect}, prelude::*, style::{Color, Styled, Stylize}, widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget, Wrap, Canvas, Line}
+    buffer::Buffer, symbols, layout::{Alignment, Rect}, prelude::*, style::{Color, Styled, Stylize}, widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget, Wrap, canvas::Canvas, canvas::Line}
 };
 
 //add svg crate
-use svg::{Tree, NodeKind};
+/* use svg::{Tree, NodeKind}; */
 
 use crate::uihelp::widget_data::{WidgetKind, WidgetData};
 use crate::app::{ App };
@@ -71,11 +71,23 @@ pub fn render_ui(app: &App, frame: &mut Frame){
 }
 
 fn render_data_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
-    let area = centered_rect(60, 30, frame.area());
+    let term_area = frame.area();
+    let term_width = term_area.width;
+    let term_height = term_area.height;
+
+    let width = term_width * 30 / 100;
+    let height = term_height * 30 / 100;
+    let area = Rect {
+        x: 1,
+        y: 2,
+        width,
+        height,
+    };
 
     let popup_content = format!(
         "Data: {:?} Counter: {}", app.data, app.counter,
     );
+
     let mut data_popup = Paragraph::new(popup_content)
         .block(Block::default().title("Popup").borders(Borders::ALL))
         .wrap(Wrap { trim: true });
@@ -83,7 +95,7 @@ fn render_data_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
         data_popup = data_popup.set_style(Style::default().fg(Color::LightRed))
     }
     frame.render_widget(Clear, area); // Clear background behind popup
-    frame.render_widget(data_popup, chunks[0]);
+    frame.render_widget(data_popup, area);
 }
 
 fn render_log_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
