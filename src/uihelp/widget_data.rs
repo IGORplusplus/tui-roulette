@@ -27,6 +27,10 @@ impl WidgetState {
             content: Some(content),
         }
     }
+
+    pub fn change_focus(&mut self) {
+        self.focus = !self.focus;
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -230,5 +234,15 @@ impl WidgetData {
         self.inventory.focus = false;
         self.player.focus = false;
         self.shotgun.focus = false;
+    }
+
+    pub fn kind_focus(&mut self, kind: &WidgetKind){
+        match kind {
+            WidgetKind::Log => self.log.focus = true,
+            WidgetKind::Data => self.data.focus = true,
+            WidgetKind::Inventory => self.inventory.focus = true,
+            WidgetKind::Player => self.player.focus = true,
+            WidgetKind::Shotgun => self.shotgun.focus = true,
+        }
     }
 }

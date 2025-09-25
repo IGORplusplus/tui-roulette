@@ -99,8 +99,12 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Data);
+                            if let Some(first) = self.widget_data.render_stack.first() {
+                                self.widget_data.kind_focus(first);
+                            }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Data, true, true);
+                            //this is to get the rendering in the right order
                             self.widget_data.render_stack.push(WidgetKind::Data)
                         }
                     },
@@ -110,6 +114,9 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Log);
+                            if let Some(first) = self.widget_data.render_stack.first() {
+                                self.widget_data.kind_focus(first);
+                            }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Log, true, true);
                             self.widget_data.render_stack.push(WidgetKind::Log)
@@ -121,6 +128,9 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Inventory);
+                            if let Some(first) = self.widget_data.render_stack.first() {
+                                self.widget_data.kind_focus(first);
+                            }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Inventory, true, true);
                             self.widget_data.render_stack.push(WidgetKind::Inventory)
@@ -132,6 +142,9 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Player);
+                            if let Some(first) = self.widget_data.render_stack.first() {
+                                self.widget_data.kind_focus(first);
+                            }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Player, true, true);
                             self.widget_data.render_stack.push(WidgetKind::Player)
@@ -143,6 +156,9 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Shotgun);
+                            if let Some(first) = self.widget_data.render_stack.first() {
+                                self.widget_data.kind_focus(first);
+                            }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Shotgun, true, true);
                             self.widget_data.render_stack.push(WidgetKind::Shotgun)
