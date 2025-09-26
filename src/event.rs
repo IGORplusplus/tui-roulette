@@ -53,7 +53,7 @@ pub enum AppEvent {
     /// Show player
     ShowPlayer,
     /// Show shotgun
-    ShowShotgun,
+    FocusShotgun,
     /// Scroll the log up
     ScrollUp,
     /// Scroll the log down

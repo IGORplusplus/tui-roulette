@@ -2,12 +2,15 @@
 use ratatui::layout::Rect;
 use crate::ui::{SHOTGUN_ART, BANG, CLICK};
 
+use ratatui::style::{Color, Style, Stylize};
+
 #[derive(Debug, Clone)]
 pub struct WidgetState {
     pub display: bool,
-    focus: bool,
+    pub focus: bool,
     area: Option<Rect>,
     content: Option<String>,
+    color: Option<Color>,
 }
 
 impl WidgetState {
@@ -16,7 +19,8 @@ impl WidgetState {
             display: false,
             focus: false,
             area: None,
-            content: None
+            content: None,
+            color: Some(Color::White),
         }
     }
 
@@ -27,6 +31,17 @@ impl WidgetState {
             focus: true,
             area: None,
             content: Some(content),
+            color: Some(Color::White),
+        }
+    }
+
+    pub fn new_color(color: Option<Color>) -> WidgetState{
+        WidgetState {
+            display: true,
+            focus: true,
+            area: None,
+            content: None,
+            color,
         }
     }
 
@@ -62,10 +77,9 @@ impl WidgetData {
     pub fn new() -> WidgetData {
         WidgetData {
             log: WidgetState::new_blank(),
-            data: WidgetState::new_blank(),
+            data: WidgetState::new_color(Some(Color::Green)),
             inventory: WidgetState::new_blank(),
             player: WidgetState::new_blank(),
-            //add in content
             shotgun: WidgetState::new_content(SHOTGUN_ART),
             current_focus: None,
 
@@ -198,6 +212,23 @@ impl WidgetData {
         widget_state.focus
     }
 
+    pub fn toggle_focus(&mut self, kind: WidgetKind) {
+        match kind {
+            WidgetKind::Log => self.log.focus = !self.log.focus,
+            WidgetKind::Data => self.data.focus = !self.data.focus,
+            WidgetKind::Inventory => self.inventory.focus = !self.inventory.focus,
+            WidgetKind::Player => self.player.focus = !self.player.focus,
+            WidgetKind::Shotgun => self.shotgun.focus = !self.shotgun.focus,
+        }
+
+        if self.current_focus == Some(kind) {
+            self.current_focus = None;
+        }
+        else {
+            self.current_focus = Some(kind);
+        }
+    }
+
     pub fn get_state(&self, kind: WidgetKind) -> &WidgetState {
         match kind {
             WidgetKind::Log => &self.log,
@@ -240,12 +271,28 @@ impl WidgetData {
     }
 
     pub fn kind_focus(&mut self, kind: &WidgetKind){
+        self.log.focus = false;
+        self.data.focus = false;
+        self.inventory.focus = false;
+        self.player.focus = false;
+        self.shotgun.focus = false;
+
         match kind {
             WidgetKind::Log => self.log.focus = true,
             WidgetKind::Data => self.data.focus = true,
             WidgetKind::Inventory => self.inventory.focus = true,
             WidgetKind::Player => self.player.focus = true,
             WidgetKind::Shotgun => self.shotgun.focus = true,
+        }
+    }
+
+    pub fn get_color(&self, kind: &WidgetKind) -> Option<Color> {
+        match kind {
+            WidgetKind::Log => self.log.color,
+            WidgetKind::Data => self.data.color,
+            WidgetKind::Inventory => self.inventory.color,
+            WidgetKind::Shotgun => self.shotgun.color,
+            WidgetKind::Player => self.player.color,
         }
     }
 }

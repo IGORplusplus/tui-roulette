@@ -43,6 +43,11 @@ pub const CLICK: &str = r#"
                                                             ""    `,  _,--....___    |
                                                                     `/           """"
 "#;
+pub const SHELL: &str = r#"
+┏━┛┃ ┃┏━┛┃  ┃
+━━┃┏━┃┏━┛┃  ┃
+━━┛┛ ┛━━┛━━┛━━┛
+"#;
 
 fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
     let vertical = Layout::default()
@@ -64,7 +69,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
         .split(vertical[1])[1]
 }
 
-pub fn render_ui(app: &App, frame: &mut Frame){
+pub fn render_ui(app: &App, frame: &mut Frame) -> Option<String> {
     //will eventually get rid of this
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -87,6 +92,12 @@ pub fn render_ui(app: &App, frame: &mut Frame){
 
     frame.render_widget(&border, frame.area());
 
+    //this should happen after the round is begun
+    //render inventory
+    //render player
+    //render shotgun
+    render_shotgun_popup(app, frame);
+
     // does it in order of the "stack"
     for kind in &app.widget_data.render_stack {
         let state = app.widget_data.get_state(*kind);
@@ -96,10 +107,11 @@ pub fn render_ui(app: &App, frame: &mut Frame){
                 WidgetKind::Log => render_log_popup(app, frame),
                 WidgetKind::Inventory => render_inventory_popup(app, frame, &chunks),
                 WidgetKind::Player => render_player_popup(app, frame),
-                WidgetKind::Shotgun => render_shotgun_popup(app, frame),
+                _ => return Some("shotgun is already displayed by default".to_string()),
             }
         }
     }
+    return None
 }
 
 fn render_data_popup(app: &App, frame: &mut Frame) {
@@ -122,14 +134,17 @@ fn render_data_popup(app: &App, frame: &mut Frame) {
 
     let mut data_popup = Paragraph::new(popup_content)
         .block(Block::default().title("Popup").borders(Borders::ALL))
-        .wrap(Wrap { trim: true });
+        .wrap(Wrap { trim: true })
+        .style(Style::default()
+            .fg(app.widget_data.get_color(&WidgetKind::Data).unwrap_or(Color::White))
+        );
     if app.widget_data.is_focused(WidgetKind::Data) {
-        data_popup = data_popup.set_style(Style::default().fg(Color::LightRed))
+        data_popup = data_popup.set_style(Style::default().fg(Color::LightRed));
     }
-    frame.render_widget(Clear, area); // Clear background behind popup
+
+    frame.render_widget(Clear, area);
     frame.render_widget(data_popup, area);
 }
-
 
 fn render_log_popup(app: &App, frame: &mut Frame) {
     let area = frame.area();

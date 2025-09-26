@@ -62,11 +62,13 @@ impl App {
     }
 
     pub fn send_log(&mut self, message: Option<String>) {
-        let max_size: usize = 10;
-        if self.log.len() > max_size {
-            self.log.pop_front();
+        if let Some(msg) = message {
+            let max_size: usize = 10;
+            if self.log.len() >= max_size {
+                self.log.pop_front();
+            }
+            self.log.push_back(msg)
         }
-        self.log.push_back(message.unwrap());
     }
 
     /// Run the application's main loop.
@@ -151,19 +153,8 @@ impl App {
                             self.widget_data.render_stack.push(WidgetKind::Player)
                         }
                     },
-                    AppEvent::ShowShotgun => {
-                        if self.widget_data.is_displayed(WidgetKind::Shotgun) {
-                            self.widget_data.set_widget(WidgetKind::Shotgun, false, false);
-                            self.widget_data
-                                .render_stack
-                                .retain(|k| *k != WidgetKind::Shotgun);
-                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(&first);
-                            }
-                        } else {
-                            self.widget_data.set_widget(WidgetKind::Shotgun, true, true);
-                            self.widget_data.render_stack.push(WidgetKind::Shotgun)
-                        }
+                    AppEvent::FocusShotgun => {
+                        self.widget_data.toggle_focus(WidgetKind::Shotgun);
                     },
                     AppEvent::ScrollUp => {
                         if self.log_scroll > 0 {
@@ -199,7 +190,7 @@ impl App {
             KeyCode::Char('l' | 'L') => self.events.send(AppEvent::ShowLog),
             //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPlayer),
-            KeyCode::Char('s' | 'S') => self.events.send(AppEvent::ShowShotgun),
+            KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
             KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
             KeyCode::Char('j') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollDown),
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
@@ -243,8 +234,9 @@ impl App {
         Ok(())
     }
 
-    fn render_ui(&self, frame: &mut Frame){
-        ui::render_ui(self, frame);
+    fn render_ui(&mut self, frame: &mut Frame){
+        let log: Option<String> = ui::render_ui(self, frame);
+        self.send_log(log);
     }
 
     /// Handles the tick event of the terminal.
