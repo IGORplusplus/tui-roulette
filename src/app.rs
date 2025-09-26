@@ -99,8 +99,9 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Data);
-                            if let Some(first) = self.widget_data.render_stack.first() {
-                                self.widget_data.kind_focus(first);
+                            self.widget_data.focus_next();
+                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
+                                self.widget_data.kind_focus(&first);
                             }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Data, true, true);
@@ -114,8 +115,8 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Log);
-                            if let Some(first) = self.widget_data.render_stack.first() {
-                                self.widget_data.kind_focus(first);
+                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
+                                self.widget_data.kind_focus(&first);
                             }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Log, true, true);
@@ -128,8 +129,8 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Inventory);
-                            if let Some(first) = self.widget_data.render_stack.first() {
-                                self.widget_data.kind_focus(first);
+                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
+                                self.widget_data.kind_focus(&first);
                             }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Inventory, true, true);
@@ -142,8 +143,8 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Player);
-                            if let Some(first) = self.widget_data.render_stack.first() {
-                                self.widget_data.kind_focus(first);
+                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
+                                self.widget_data.kind_focus(&first);
                             }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Player, true, true);
@@ -156,8 +157,8 @@ impl App {
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Shotgun);
-                            if let Some(first) = self.widget_data.render_stack.first() {
-                                self.widget_data.kind_focus(first);
+                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
+                                self.widget_data.kind_focus(&first);
                             }
                         } else {
                             self.widget_data.set_widget(WidgetKind::Shotgun, true, true);

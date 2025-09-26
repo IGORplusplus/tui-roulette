@@ -1,5 +1,6 @@
 //widget-data.rs
 use ratatui::layout::Rect;
+use crate::ui::{SHOTGUN_ART, BANG, CLICK};
 
 #[derive(Debug, Clone)]
 pub struct WidgetState {
@@ -19,11 +20,12 @@ impl WidgetState {
         }
     }
 
-    pub fn new_content(area: Rect, content: String) -> WidgetState{
+    pub fn new_content(content: &str) -> WidgetState{
+        let content: String = content.to_string();
         WidgetState {
             display: true,
             focus: true,
-            area: Some(area),
+            area: None,
             content: Some(content),
         }
     }
@@ -63,7 +65,8 @@ impl WidgetData {
             data: WidgetState::new_blank(),
             inventory: WidgetState::new_blank(),
             player: WidgetState::new_blank(),
-            shotgun: WidgetState::new_blank(),
+            //add in content
+            shotgun: WidgetState::new_content(SHOTGUN_ART),
             current_focus: None,
 
             render_stack: Vec::new(),

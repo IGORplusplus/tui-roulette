@@ -16,13 +16,32 @@ const PLAYER_ART: &str = r#"
 />🍪
 "#;
 
-const SHOTGUN_ART: &str = r#"
- ,______________________________________       
+pub const SHOTGUN_ART: &str = r#"
+ ,______________________________________
 |_________________,----------._ [____]  ""-,__  __....-----=====
                (_(||||||||||||)___________/   ""                |
-                  `----------' Mossbrg[ ))"-,                   |
+                  `----------'        [ ))"-,                   |
                                        ""    `,  _,--....___    |
                                                `/           """"
+"#;
+
+pub const BANG: &str = r#"
+########     ###    ##    ##  ######   ,______________________________________
+##     ##   ## ##   ###   ## ##    ## |_________________,----------._ [____]  ""-,__  __....-----=====
+##     ##  ##   ##  ####  ## ##                      (_(||||||||||||)___________/   ""                |
+########  ##     ## ## ## ## ##   ####                  `----------'        [ ))"-,                   |
+##     ## ######### ##  #### ##    ##                                        ""    `,  _,--....___    |
+##     ## ##     ## ##   ### ##    ##                                                `/           """"
+########  ##     ## ##    ##  ######
+"#;
+
+pub const CLICK: &str = r#"
+     |    o     |     ,______________________________________
+,---.|    .,---.|__/ |_________________,----------._ [____]  ""-,__  __....-----=====
+|    |    ||    |  \                (_(||||||||||||)___________/   ""                |
+`---'`---'``---'`   `                  `----------'        [ ))"-,                   |
+                                                            ""    `,  _,--....___    |
+                                                                    `/           """"
 "#;
 
 fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
@@ -176,6 +195,7 @@ fn render_player_popup(app: &App, frame: &mut Frame) {
     frame.render_widget(player_popup, area);
 }
 
+//begin changing "popups" to not be such as shotgun and inventory
 fn render_shotgun_popup(app: &App, frame: &mut Frame) {
     let frame_area = frame.area();
     let w = 68;
@@ -196,4 +216,11 @@ fn render_shotgun_popup(app: &App, frame: &mut Frame) {
 
     frame.render_widget(Clear, area);
     frame.render_widget(shotgun_popup, area);
+}
+
+fn render_confirm_popup(app: &App, frame: &mut Frame) {
+    //three rects/ one big one and two small ones
+    let frame_area = frame.area();
+    let w = frame_area.width;
+    let h = frame_area.height;
 }
