@@ -63,7 +63,7 @@ impl App {
 
     pub fn send_log(&mut self, message: Option<String>) {
         if let Some(msg) = message {
-            let max_size: usize = 10;
+            let max_size: usize = 1000;
             if self.log.len() >= max_size {
                 self.log.pop_front();
             }
