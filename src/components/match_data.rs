@@ -1,6 +1,7 @@
 #[derive(Debug, Default, Clone)]
 pub struct MatchData {
     count: i8,
+    //represents the players
     turn: Option<i8>,
 }
 
