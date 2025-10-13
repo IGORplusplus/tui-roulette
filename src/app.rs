@@ -105,6 +105,9 @@ impl App {
                             if let Some(first) = self.widget_data.render_stack.first().cloned() {
                                 self.widget_data.kind_focus(&first);
                             }
+                            /* if let Some(first) = self.widget_data.render_stack.iter().find(|w| **w != WidgetKind::Shotgun).cloned() {
+                                self.widget_data.kind_focus(&first);
+                            } */
                         } else {
                             self.widget_data.set_widget(WidgetKind::Data, true, true);
                             //this is to get the rendering in the right order

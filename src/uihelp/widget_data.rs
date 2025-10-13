@@ -128,12 +128,14 @@ impl WidgetData {
     pub fn focus_next(&mut self) {
         let order = Self::order();
 
+        let log_displayed = self.get(WidgetKind::Log).display;
+
         // Find current focus index
-        let current_idx = order.iter().position(|&kind| self.get(kind).focus );
+        let current_idx = order.iter().position(|&kind| self.get(kind).focus);
 
         // Clear all focus
-        for kind in order {
-            self.get_mut(kind).focus = false;
+        for kind in order.iter() {
+            self.get_mut(*kind).focus = false;
         }
 
         // Start searching from the next index
@@ -142,12 +144,21 @@ impl WidgetData {
             None => 0,
         };
 
-        // Loop until we find a displayed widget
+        // Loop until we find a displayed (and allowed) widget
         for _ in 0..order.len() {
-            if self.get(order[next_idx]).display {
-                self.get_mut(order[next_idx]).focus = true;
+            let kind = order[next_idx];
+
+            // ⛔ skip Shotgun if Log is displayed
+            if log_displayed && kind == WidgetKind::Shotgun {
+                next_idx = (next_idx + 1) % order.len();
+                continue;
+            }
+
+            if self.get(kind).display {
+                self.get_mut(kind).focus = true;
                 return;
             }
+
             next_idx = (next_idx + 1) % order.len();
         }
     }
