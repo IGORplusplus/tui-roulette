@@ -1,5 +1,5 @@
 //widget-data.rs
-use std::cell::RefCell;
+use std::cell::{ Ref, RefCell };
 
 use ratatui::layout::Rect;
 
@@ -142,14 +142,14 @@ impl WidgetData {
     pub fn focus_next(&mut self) {
         let order = Self::order();
 
-        let log_displayed = self.get(WidgetKind::Log).display;
+        let log_displayed = self.get(WidgetKind::Log).borrow().display;
 
         // Find current focus index
-        let current_idx = order.iter().position(|&kind| self.get(kind).focus);
+        let current_idx = order.iter().position(|&kind| self.get(kind).borrow_mut().focus);
 
         // Clear all focus
         for kind in order.iter() {
-            self.get_mut(*kind).focus = false;
+            self.get(*kind).borrow_mut().focus = false;
         }
 
         // Start searching from the next index
@@ -168,8 +168,8 @@ impl WidgetData {
                 continue;
             }
 
-            if self.get(kind).display {
-                self.get_mut(kind).focus = true;
+            if self.get(kind).borrow().display {
+                self.get(kind).borrow_mut().focus = true;
                 return;
             }
 
@@ -244,23 +244,23 @@ impl WidgetData {
         }
     }
 
-    pub fn get_state(&self, kind: WidgetKind) -> &WidgetState {
+    pub fn get_state(&self, kind: WidgetKind) -> Ref<WidgetState> {
         match kind {
-            WidgetKind::Log => &self.log,
-            WidgetKind::Data => &self.data,
-            WidgetKind::Inventory => &self.inventory,
-            WidgetKind::Player => &self.player,
-            WidgetKind::Shotgun => &self.shotgun,
+            WidgetKind::Log => self.log.borrow(),
+            WidgetKind::Data => &self.data.borrow(),
+            WidgetKind::Inventory => &self.inventory.borrow(),
+            WidgetKind::Player => &self.player.borrow(),
+            WidgetKind::Shotgun => &self.shotgun.borrow(),
         }
     }
 
     pub fn set_widget(&mut self, kind: WidgetKind, display_b: bool, focus_b: bool) {
         if focus_b {
-            self.log.focus = false;
-            self.data.focus = false;
-            self.inventory.focus = false;
-            self.player.focus = false;
-            self.shotgun.focus = false;
+            self.log.borrow_mut().focus = false;
+            self.data.borrow_mut().focus = false;
+            self.inventory.borrow_mut().focus = false;
+            self.player.borrow_mut().focus = false;
+            self.shotgun.borrow_mut().focus = false;
         }
 
         let widget_to_modify = match kind {
@@ -271,55 +271,48 @@ impl WidgetData {
             WidgetKind::Shotgun => &mut self.shotgun,
         };
         //_b means boolean
-        widget_to_modify.display = display_b;
-        widget_to_modify.focus = focus_b;
+        let mut widget = widget_to_modify.borrow_mut();
+        widget.display = display_b;
+        widget.focus = focus_b;
         if focus_b {
             self.current_focus = Some(kind);
         }
     }
 
-    pub fn change_focus(&mut self, next: bool) {
-        self.log.focus = false;
-        self.data.focus = false;
-        self.inventory.focus = false;
-        self.player.focus = false;
-        self.shotgun.focus = false;
-    }
-
     pub fn change_content(&mut self, kind: WidgetKind, content: Option<String>) {
         match kind {
-            WidgetKind::Log => self.log.content = content,
-            WidgetKind::Data => self.data.content = content,
-            WidgetKind::Inventory => self.inventory.content = content,
-            WidgetKind::Shotgun => self.shotgun.content = content,
-            WidgetKind::Player => self.player.content = content,
+            WidgetKind::Log => self.log.borrow_mut().content = content,
+            WidgetKind::Data => self.data.borrow_mut().content = content,
+            WidgetKind::Inventory => self.inventory.borrow_mut().content = content,
+            WidgetKind::Shotgun => self.shotgun.borrow_mut().content = content,
+            WidgetKind::Player => self.player.borrow_mut().content = content,
             _=> panic!("can't change content of invalid widget kind"),
         }
     }
 
     pub fn kind_focus(&mut self, kind: &WidgetKind){
-        self.log.focus = false;
-        self.data.focus = false;
-        self.inventory.focus = false;
-        self.player.focus = false;
-        self.shotgun.focus = false;
+        self.log.borrow_mut().focus = false;
+        self.data.borrow_mut().focus = false;
+        self.inventory.borrow_mut().focus = false;
+        self.player.borrow_mut().focus = false;
+        self.shotgun.borrow_mut().focus = false;
 
         match kind {
-            WidgetKind::Log => self.log.focus = true,
-            WidgetKind::Data => self.data.focus = true,
-            WidgetKind::Inventory => self.inventory.focus = true,
-            WidgetKind::Player => self.player.focus = true,
-            WidgetKind::Shotgun => self.shotgun.focus = true,
+            WidgetKind::Log => self.log.borrow_mut().focus = true,
+            WidgetKind::Data => self.data.borrow_mut().focus = true,
+            WidgetKind::Inventory => self.inventory.borrow_mut().focus = true,
+            WidgetKind::Player => self.player.borrow_mut().focus = true,
+            WidgetKind::Shotgun => self.shotgun.borrow_mut().focus = true,
         }
     }
 
     pub fn get_color(&self, kind: &WidgetKind) -> Option<Color> {
         match kind {
-            WidgetKind::Log => self.log.color,
-            WidgetKind::Data => self.data.color,
-            WidgetKind::Inventory => self.inventory.color,
-            WidgetKind::Shotgun => self.shotgun.color,
-            WidgetKind::Player => self.player.color,
+            WidgetKind::Log => self.log.borrow().color,
+            WidgetKind::Data => self.data.borrow().color,
+            WidgetKind::Inventory => self.inventory.borrow().color,
+            WidgetKind::Shotgun => self.shotgun.borrow().color,
+            WidgetKind::Player => self.player.borrow().color,
         }
     }
 }
