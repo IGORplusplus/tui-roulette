@@ -1,15 +1,28 @@
 #[derive(Debug, Default, Clone)]
 pub struct MatchData {
-    count: i8,
+    //round count
+    count: u8,
     //represents the players
-    turn: Option<i8>,
+    turn: Option<u16>,
 }
 
 impl MatchData {
     pub fn new() -> Self {
         MatchData {
-            count: 0,
+            count: 1,
             turn: None,
         }
+    }
+
+    pub fn incr_round(&mut self) {
+        self.count += 1;
+    }
+
+    pub fn count(&self) -> u8 {
+        self.count
+    }
+
+    pub fn reset_count(&mut self) {
+        self.count = 0;
     }
 }

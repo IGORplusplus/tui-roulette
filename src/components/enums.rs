@@ -11,9 +11,9 @@ pub enum ReloadAmount {
     #[default]
     One = 3,
     Two = 5,
-    Three = 8,
-    Four = 9,
-    Five = 13,
+    Three = 6,
+    Four = 8,
+    Five = 10,
 }
 
 impl ReloadAmount {

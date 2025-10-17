@@ -1,8 +1,20 @@
 //widget-data.rs
+use std::cell::RefCell;
+
 use ratatui::layout::Rect;
+
 use crate::ui::{SHOTGUN_ART, BANG, CLICK};
 
 use ratatui::style::{Color, Style, Stylize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum WidgetKind {
+    Log,
+    Data,
+    Inventory,
+    Player,
+    Shotgun,
+}
 
 #[derive(Debug, Clone)]
 pub struct WidgetState {
@@ -35,6 +47,17 @@ impl WidgetState {
         }
     }
 
+    fn change_state_content(&self, content: &str) -> WidgetState {
+        let content: String = content.to_string();
+        WidgetState {
+            display: self.display,
+            focus: self.focus,
+            area: self.area,
+            content: Some(content),
+            color: self.color,
+        }
+    }
+
     pub fn new_color(color: Option<Color>) -> WidgetState{
         WidgetState {
             display: true,
@@ -50,25 +73,16 @@ impl WidgetState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum WidgetKind {
-    Log,
-    Data,
-    Inventory,
-    Player,
-    Shotgun,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WidgetData{
     //these are a little redundant
-    log: WidgetState,
-    data: WidgetState,
-    inventory: WidgetState,
-    player: WidgetState,
-    shotgun: WidgetState,
-    current_focus: Option<WidgetKind>,
+    log: RefCell<WidgetState>,
+    data: RefCell<WidgetState>,
+    inventory: RefCell<WidgetState>,
+    player: RefCell<WidgetState>,
+    shotgun: RefCell<WidgetState>,
 
+    current_focus: Option<WidgetKind>,
     //render last in list first
     pub render_stack: Vec<WidgetKind>,
 }
@@ -76,24 +90,24 @@ pub struct WidgetData{
 impl WidgetData {
     pub fn new() -> WidgetData {
         WidgetData {
-            log: WidgetState::new_blank(),
-            data: WidgetState::new_color(Some(Color::Green)),
-            inventory: WidgetState::new_blank(),
-            player: WidgetState::new_blank(),
-            shotgun: WidgetState::new_content(SHOTGUN_ART),
+            log: RefCell::new(WidgetState::new_blank()),
+            data: RefCell::new(WidgetState::new_color(Some(Color::Green))),
+            inventory: RefCell::new(WidgetState::new_blank()),
+            player: RefCell::new(WidgetState::new_blank()),
+            shotgun: RefCell::new(WidgetState::new_content(SHOTGUN_ART)),
             current_focus: None,
 
             render_stack: Vec::new(),
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (WidgetKind, &WidgetState)> {
+    pub fn iter(&self) -> impl Iterator<Item = (WidgetKind, std::cell::Ref<WidgetState>)> {
         [
-            (WidgetKind::Log, &self.log),
-            (WidgetKind::Data, &self.data),
-            (WidgetKind::Inventory, &self.inventory),
-            (WidgetKind::Player, &self.player),
-            (WidgetKind::Shotgun, &self.shotgun),
+            (WidgetKind::Log, self.log.borrow()),
+            (WidgetKind::Data, self.data.borrow()),
+            (WidgetKind::Inventory, self.inventory.borrow()),
+            (WidgetKind::Player, self.player.borrow()),
+            (WidgetKind::Shotgun, self.shotgun.borrow()),
         ]
             .into_iter()
     }
@@ -114,13 +128,13 @@ impl WidgetData {
         ]
     }
 
-    fn get_mut(&mut self, kind: WidgetKind) -> &mut WidgetState {
+    fn get(&self, kind: WidgetKind) -> &RefCell<WidgetState> {
         match kind {
-            WidgetKind::Log => &mut self.log,
-            WidgetKind::Data => &mut self.data,
-            WidgetKind::Inventory => &mut self.inventory,
-            WidgetKind::Player => &mut self.player,
-            WidgetKind::Shotgun => &mut self.shotgun,
+            WidgetKind::Log => &self.log,
+            WidgetKind::Data => &self.data,
+            WidgetKind::Inventory => &self.inventory,
+            WidgetKind::Player => &self.player,
+            WidgetKind::Shotgun => &self.shotgun,
         }
     }
 
@@ -148,7 +162,7 @@ impl WidgetData {
         for _ in 0..order.len() {
             let kind = order[next_idx];
 
-            // ⛔ skip Shotgun if Log is displayed
+            // skip Shotgun if Log is displayed
             if log_displayed && kind == WidgetKind::Shotgun {
                 next_idx = (next_idx + 1) % order.len();
                 continue;
@@ -188,16 +202,6 @@ impl WidgetData {
                 return;
             }
             prev_idx = if prev_idx == 0 { order.len() - 1 } else { prev_idx - 1 };
-        }
-    }
-
-    fn get(&self, kind: WidgetKind) -> &WidgetState {
-        match kind {
-            WidgetKind::Log => &self.log,
-            WidgetKind::Data => &self.data,
-            WidgetKind::Inventory => &self.inventory,
-            WidgetKind::Player => &self.player,
-            WidgetKind::Shotgun => &self.shotgun,
         }
     }
 
@@ -266,6 +270,7 @@ impl WidgetData {
             WidgetKind::Player => &mut self.player,
             WidgetKind::Shotgun => &mut self.shotgun,
         };
+        //_b means boolean
         widget_to_modify.display = display_b;
         widget_to_modify.focus = focus_b;
         if focus_b {
@@ -279,6 +284,17 @@ impl WidgetData {
         self.inventory.focus = false;
         self.player.focus = false;
         self.shotgun.focus = false;
+    }
+
+    pub fn change_content(&mut self, kind: WidgetKind, content: Option<String>) {
+        match kind {
+            WidgetKind::Log => self.log.content = content,
+            WidgetKind::Data => self.data.content = content,
+            WidgetKind::Inventory => self.inventory.content = content,
+            WidgetKind::Shotgun => self.shotgun.content = content,
+            WidgetKind::Player => self.player.content = content,
+            _=> panic!("can't change content of invalid widget kind"),
+        }
     }
 
     pub fn kind_focus(&mut self, kind: &WidgetKind){

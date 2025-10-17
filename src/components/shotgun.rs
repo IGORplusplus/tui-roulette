@@ -119,4 +119,8 @@ impl Shotgun {
             Some("No shell in shotgun.".to_string())
         }
     }
+
+    pub fn shell_count(&self) -> usize {
+        self.shells.borrow().len()
+    }
 }

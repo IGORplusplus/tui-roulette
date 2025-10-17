@@ -2,8 +2,10 @@
 use std::collections::VecDeque;
 
 use crate::components::enums::ReloadAmount;
+use crate::components::shotgun;
 use crate::uihelp::widget_data::{WidgetData, WidgetKind};
 use crate::ui;
+use crate::components::match_data::MatchData;
 
 use crate::event::{AppEvent, Event, EventHandler};
 use crossterm::event::EnableMouseCapture;
@@ -33,6 +35,8 @@ pub struct App {
     pub events: EventHandler,
     /// game data
     pub data: Data,
+    /// match data
+    pub match_data: MatchData,
     ///holds the information of the widgets
     pub widget_data: WidgetData,
     /// log for popup texts
@@ -48,6 +52,7 @@ impl Default for App {
             counter: 0,
             events: EventHandler::new(),
             data: Data::new(),
+            match_data: MatchData::new(),
             log: VecDeque::new(),
             log_scroll: 0,
             widget_data: WidgetData::new(),
@@ -92,9 +97,22 @@ impl App {
                     },
                     AppEvent::Shoot => {
                         if let Some(msg) = self.data.shotgun.shoot() {
-                            self.send_log(Some(msg));
+                            if self.data.shotgun.shell_count() == 0 {
+                                self.match_data.incr_round();
+                            } else {
+                                //make it so that the widget_data has shotgun shooting
+                                //for .25 seconds
+                                let widget_data = self.widget_data.clone(); // clone for async move
+                                tokio::spawn(async move {
+                                    widget_data.change_content(WidgetKind::Shotgun, Some("💥 Shooting!".into()));
+                                    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                                    widget_data.change_content(WidgetKind::Shotgun, None);
+                                });
+                            }
+                           self.send_log(Some(msg));
                         }
                     },
+                    //TODO: I need to make it so that data popsup the first time I press d
                     AppEvent::ShowData => {
                         if self.widget_data.is_displayed(WidgetKind::Data) {
                             self.widget_data.set_widget(WidgetKind::Data, false, false);
@@ -105,13 +123,10 @@ impl App {
                             if let Some(first) = self.widget_data.render_stack.first().cloned() {
                                 self.widget_data.kind_focus(&first);
                             }
-                            /* if let Some(first) = self.widget_data.render_stack.iter().find(|w| **w != WidgetKind::Shotgun).cloned() {
-                                self.widget_data.kind_focus(&first);
-                            } */
                         } else {
                             self.widget_data.set_widget(WidgetKind::Data, true, true);
                             //this is to get the rendering in the right order
-                            self.widget_data.render_stack.push(WidgetKind::Data)
+                            self.widget_data.render_stack.push(WidgetKind::Data);
                         }
                     },
                     AppEvent::ShowLog => {
@@ -199,7 +214,7 @@ impl App {
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
             KeyCode::Tab => self.events.send(AppEvent::ChangeFocus),
             KeyCode::Char('r' | 'R') => {
-                match self.data.round_count {
+                match self.match_data.count() {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
                     2 => self.events.send(AppEvent::Reload(ReloadAmount::Two)),
                     3 => self.events.send(AppEvent::Reload(ReloadAmount::Three)),
@@ -208,7 +223,7 @@ impl App {
                     _ => self.events.send(AppEvent::Reload(ReloadAmount::Five)),
                 }
             }
-            KeyCode::Char(' ') => self.events.send(AppEvent::Shoot),
+            KeyCode::Char(' ') if self.widget_data.is_focused(WidgetKind::Shotgun)=> self.events.send(AppEvent::Shoot),
             // Other handlers you could add here.
             _ => {}
         }
