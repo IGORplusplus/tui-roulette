@@ -129,7 +129,7 @@ fn render_data_popup(app: &App, frame: &mut Frame) {
     };
 
     let popup_content = format!(
-        "Data: {:?} Counter: {}\nWindow: {:?}", app.data, app.match_data.round_count, app.logger.get_window(),
+        "Data: {:?} Counter: {}\nWindow: {:?}", app.data, app.match_data.round_count(), app.logger.get_window(),
     );
 
     let mut data_popup = Paragraph::new(popup_content)

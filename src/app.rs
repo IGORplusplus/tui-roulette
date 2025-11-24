@@ -16,9 +16,9 @@ use crossterm::terminal::{enable_raw_mode, disable_raw_mode};
 use crossterm::event::EnableMouseCapture;
 
 //user made ones
-use crate::data::Data;
+use crate::{data::Data, ui_components::widget_data};
 use crate::components::enums::ReloadAmount;
-use crate::components::match_data::MatchData;
+use crate::components::match_data::*;
 use crate::ui_components::widget_data::{WidgetData, WidgetKind};
 use crate::event::{AppEvent, Event, EventHandler};
 use crate::ui;
@@ -83,7 +83,6 @@ impl App {
                 let max_window_lines = ( area.height as f32 / 1.45 ) as usize;
                 self.logger.set_window_size(max_window_lines);
                 self.logger.update_window();
-
                 self.render_ui(frame)})?;
 
             match self.events.next().await? {
@@ -100,79 +99,96 @@ impl App {
                     },
                     AppEvent::Shoot => {
                         if let Some(msg) = self.data.shotgun.shoot() {
-                            self.logger.send_log(Some(msg));
-                            if !self.data.shotgun.is_empty() {
-                                //bring up the confirmation screen
-                                self.widget_data.set_widget(WidgetKind::Confirmation, true, true);
-                            } else {
-                                //bring up the info screen
-
+                            
+                            //not a very robust solution but it works for now
+                            if msg.contains("Last") {
+                                self.match_data.next_round();
                             }
+                            self.logger.send_log(Some(msg));
+                            //if I shoot it becomes the focus
+                            self.widget_data.display_widget(WidgetKind::Shotgun, true);
                         }
                     },
                     AppEvent::ShowData => {
                         if self.widget_data.is_displayed(WidgetKind::Data) {
-                            self.widget_data.set_widget(WidgetKind::Data, false, false);
-                            self.widget_data
-                                .render_stack
-                                .retain(|k| *k != WidgetKind::Data);
-                            self.widget_data.focus_next();
+                            self.widget_data.display_widget(WidgetKind::Data, true);
+                            self.widget_data.kind_focus(WidgetKind::Data);
                             if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(&first);
+                                self.widget_data.kind_focus(first);
                             }
                             /* if let Some(first) = self.widget_data.render_stack.iter().find(|w| **w != WidgetKind::Shotgun).cloned() {
                                 self.widget_data.kind_focus(&first);
                             } */
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Data, true, true);
+                            self.widget_data.display_widget(WidgetKind::Data, true);
                             //this is to get the rendering in the right order
                             self.widget_data.render_stack.push(WidgetKind::Data)
                         }
                     },
+                    /* AppEvent::HideData => {
+                    } */
 
                     AppEvent::ShowLog => {
                         if self.widget_data.is_displayed(WidgetKind::Log) {
-                            self.widget_data.set_widget(WidgetKind::Log, false, false);
+                            self.widget_data.display_widget(WidgetKind::Log, true);
+                            self.widget_data.kind_focus(WidgetKind::Log);
+                            self.widget_data.render_stack.push(WidgetKind::Log);
+                        } else {
+                            self.widget_data.display_widget(WidgetKind::Log, true);
+                            self.widget_data.render_stack.push(WidgetKind::Log);
+                            self.widget_data.kind_focus(WidgetKind::Log);
+                        }
+                    },
+                    AppEvent::HideLog => {
+                        if self.widget_data.render_stack.contains(&WidgetKind::Log) {
+                            self.widget_data.display_widget(WidgetKind::Log, false);
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Log);
-                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(&first);
+
+                            if !self.widget_data.render_stack.is_empty() {
+                                let next_to_focus = self.widget_data.render_stack.first().unwrap().to_owned();
+                                self.widget_data.kind_focus(next_to_focus);
                             }
-                        } else {
-                            self.widget_data.set_widget(WidgetKind::Log, true, true);
-                            self.widget_data.render_stack.push(WidgetKind::Log)
                         }
                     },
 
                     AppEvent::ShowInventory => {
                         if self.widget_data.is_displayed(WidgetKind::Inventory) {
-                            self.widget_data.set_widget(WidgetKind::Inventory, false, false);
+                            self.widget_data.display_widget(WidgetKind::Inventory, false);
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Inventory);
                             if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(&first);
+                                self.widget_data.kind_focus(first);
                             }
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Inventory, true, true);
+                            self.widget_data.display_widget(WidgetKind::Inventory, true);
                             self.widget_data.render_stack.push(WidgetKind::Inventory)
                         }
                     },
+
+                    /* AppEvent::HideInventory => {
+                    } */
+
                     AppEvent::ShowPlayer => {
                         if self.widget_data.is_displayed(WidgetKind::Player) {
-                            self.widget_data.set_widget(WidgetKind::Player, false, false);
+                            self.widget_data.display_widget(WidgetKind::Player, false);
                             self.widget_data
                                 .render_stack
                                 .retain(|k| *k != WidgetKind::Player);
                             if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(&first);
+                                self.widget_data.kind_focus(first);
                             }
                         } else {
-                            self.widget_data.set_widget(WidgetKind::Player, true, true);
+                            self.widget_data.display_widget(WidgetKind::Player, true);
                             self.widget_data.render_stack.push(WidgetKind::Player)
                         }
                     },
+
+                    AppEvent::HidePopup(kind) => {
+                    }
+
                     AppEvent::FocusShotgun => {
                         self.widget_data.toggle_focus(WidgetKind::Shotgun);
                     },
@@ -211,12 +227,22 @@ impl App {
             //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPlayer),
             KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
+            KeyCode::Char('x' | 'X') => {
+                if let Some(current_focus) = self.widget_data.get_focus() {
+                    self.widget_data.render_stack.retain(|k| *k != current_focus);
+                    if !self.widget_data.render_stack.is_empty() {
+                        let next_to_focus = self.widget_data.render_stack.first().unwrap();
+                        self.widget_data.set_focus(next_to_focus);
+                    }
+                }
+            },
+
             KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
             KeyCode::Char('j') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollDown),
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
             KeyCode::Tab => self.events.send(AppEvent::ChangeFocus),
             KeyCode::Char('r' | 'R') => {
-                match self.match_data.round_count {
+                match self.match_data.round_count() {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
                     2 => self.events.send(AppEvent::Reload(ReloadAmount::Two)),
                     3 => self.events.send(AppEvent::Reload(ReloadAmount::Three)),

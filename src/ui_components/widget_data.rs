@@ -1,3 +1,4 @@
+use crossterm::terminal::disable_raw_mode;
 //widget-data.rs
 use ratatui::layout::Rect;
 use crate::ui::{SHOTGUN_ART, BANG, CLICK};
@@ -132,7 +133,7 @@ impl WidgetData {
         }
     }
 
-    fn get_mut(&mut self, kind: WidgetKind) -> &mut WidgetState {
+    fn get_mut_widget(&mut self, kind: WidgetKind) -> &mut WidgetState {
         match kind {
             WidgetKind::Log => &mut self.log,
             WidgetKind::Data => &mut self.data,
@@ -154,7 +155,7 @@ impl WidgetData {
 
         // Clear all focus
         for kind in order.iter() {
-            self.get_mut(*kind).focus = false;
+            self.get_mut_widget(*kind).focus = false;
         }
 
         // Start searching from the next index
@@ -167,13 +168,14 @@ impl WidgetData {
         for _ in 0..order.len() {
             let kind = order[next_idx];
 
+            //TODO: why is the shotgun discriminated here?
             if log_displayed && kind == WidgetKind::Shotgun {
                 next_idx = (next_idx + 1) % order.len();
                 continue;
             }
 
             if self.get(kind).display {
-                self.get_mut(kind).focus = true;
+                self.get_mut_widget(kind).focus = true;
                 return;
             }
 
@@ -189,7 +191,7 @@ impl WidgetData {
 
         // Clear all focus
         for kind in order {
-            self.get_mut(kind).focus = false;
+            self.get_mut_widget(kind).focus = false;
         }
 
         // Start searching from the previous index
@@ -202,7 +204,7 @@ impl WidgetData {
         // Loop until we find a displayed widget
         for _ in 0..order.len() {
             if self.get(order[prev_idx]).display {
-                self.get_mut(order[prev_idx]).focus = true;
+                self.get_mut_widget(order[prev_idx]).focus = true;
                 return;
             }
             prev_idx = if prev_idx == 0 { order.len() - 1 } else { prev_idx - 1 };
@@ -223,6 +225,15 @@ impl WidgetData {
 
     pub fn is_focused(&self, kind: WidgetKind) -> bool{
         self.get(kind).focus
+    }
+
+    pub fn get_focus(&self) -> Option<WidgetKind> {
+        self.current_focus
+    }
+
+    pub fn set_focus(&mut self, kind: Option<WidgetKind>) {
+        self.current_focus = kind;
+        //add in a match or whatever to change the appropriate widget_state
     }
 
     pub fn toggle_focus(&mut self, kind: WidgetKind) {
@@ -254,28 +265,23 @@ impl WidgetData {
         }
     }
 
-    pub fn set_widget(&mut self, kind: WidgetKind, display_b: bool, focus_b: bool) {
-        if focus_b {
-            self.log.focus = false;
-            self.data.focus = false;
-            self.inventory.focus = false;
-            self.player.focus = false;
-            self.shotgun.focus = false;
-        }
+    pub fn display_widget(&mut self, kind: WidgetKind, focus_new: bool) {
 
-        let widget_to_modify = match kind {
-            WidgetKind::Log => &mut self.log,
-            WidgetKind::Data => &mut self.data,
-            WidgetKind::Inventory => &mut self.inventory,
-            WidgetKind::Player => &mut self.player,
-            WidgetKind::Shotgun => &mut self.shotgun,
-            WidgetKind::Confirmation => &mut self.confirmation,
-        };
-        widget_to_modify.display = display_b;
-        widget_to_modify.focus = focus_b;
-        if focus_b {
-            self.current_focus = Some(kind);
+        if focus_new {
+            if let Some(prev_kind) = self.get_focus() {
+                self.get_mut_widget(prev_kind).focus = false;
+            }
+
+            self.get_mut_widget(kind).focus = true;
+            self.set_focus(Some(kind));
+            self.get_mut_widget(kind).display = true;
+        } else {
+            self.get_mut_widget(kind).display = true;
         }
+    }
+
+    pub fn hide_widget(&mut self, kind: WidgetKind) {
+            self.get_mut_widget(kind).display = false;
     }
 
     //TODO: edit this function so that it works correctly with edge cases
@@ -288,7 +294,7 @@ impl WidgetData {
         self.confirmation.focus = false;
     }
 
-    pub fn kind_focus(&mut self, kind: &WidgetKind){
+    pub fn kind_focus(&mut self, kind: WidgetKind){
         self.remove_focus();
 
         match kind {

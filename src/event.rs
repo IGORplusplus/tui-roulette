@@ -4,7 +4,7 @@ use ratatui::crossterm::event::Event as CrosstermEvent;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-use crate::components::enums::ReloadAmount;
+use crate::{components::enums::ReloadAmount, ui_components::widget_data::WidgetKind};
 
 /// The frequency at which tick events are emitted.
 const TICK_FPS: f64 = 30.0;
@@ -54,6 +54,10 @@ pub enum AppEvent {
     ShowPlayer,
     /// Show shotgun
     FocusShotgun,
+    /// Hide the log
+    HideLog,
+    /// generic hide popup function
+    HidePopup(Option<WidgetKind>),
     /// Scroll the log up
     ScrollUp,
     /// Scroll the log down

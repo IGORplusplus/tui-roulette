@@ -118,9 +118,13 @@ impl Shotgun {
     pub fn shoot(&self) -> Option<String>{
         let mut shell_borrow = self.shells.borrow_mut();
         if let Some(popped_shell) = shell_borrow.pop() {
-            Some(format!("Popped shell: {:?}", popped_shell))
+            if shell_borrow.is_empty() {
+                Some(format!("Last shell in shotgun: {:?}", popped_shell))
+            } else {
+                Some(format!("Popped shell: {:?}", popped_shell))
+            }
         } else {
-            Some("No shell in shotgun.".to_string())
+            Some("No shell in shotgun".to_string())
         }
     }
 }
