@@ -12,7 +12,7 @@ use ratatui::{
 };
 
 //crossterm
-use crossterm::terminal::{enable_raw_mode, disable_raw_mode};
+use crossterm::{style::Color, terminal::{disable_raw_mode, enable_raw_mode}};
 use crossterm::event::EnableMouseCapture;
 
 //user made ones
@@ -99,7 +99,7 @@ impl App {
                     },
                     AppEvent::Shoot => {
                         if let Some(msg) = self.data.shotgun.shoot() {
-                            
+
                             //not a very robust solution but it works for now
                             if msg.contains("Last") {
                                 self.match_data.next_round();
@@ -125,20 +125,31 @@ impl App {
                             self.widget_data.render_stack.push(WidgetKind::Data)
                         }
                     },
-                    /* AppEvent::HideData => {
-                    } */
+
+                    //kind is Option<WidgetKind>
+                    AppEvent::HidePopup(kind) => {
+
+                        //widget logic
+                        let kind_copy = kind;
+                        match kind_copy {
+                            Some(k) => self.send_log(Some(format!("hiding {:?}", k).to_owned())),
+                            _ => continue,
+                        }
+                        if self.widget_data.is_displayed(kind_copy.unwrap()) {
+                            self.widget_data.hide_widget(kind.unwrap());
+                        }
+                        self.widget_data.render_stack.retain(|k| *k != kind.unwrap());
+                        if !self.widget_data.render_stack.is_empty() {
+                            self.widget_data.focus_next();
+                        }
+                        
+                    },
 
                     AppEvent::ShowLog => {
-                        if self.widget_data.is_displayed(WidgetKind::Log) {
-                            self.widget_data.display_widget(WidgetKind::Log, true);
-                            self.widget_data.kind_focus(WidgetKind::Log);
-                            self.widget_data.render_stack.push(WidgetKind::Log);
-                        } else {
-                            self.widget_data.display_widget(WidgetKind::Log, true);
-                            self.widget_data.render_stack.push(WidgetKind::Log);
-                            self.widget_data.kind_focus(WidgetKind::Log);
-                        }
+                        self.widget_data.display_widget(WidgetKind::Log, true);
+                        self.widget_data.render_stack.push(WidgetKind::Log)
                     },
+
                     AppEvent::HideLog => {
                         if self.widget_data.render_stack.contains(&WidgetKind::Log) {
                             self.widget_data.display_widget(WidgetKind::Log, false);
@@ -154,44 +165,19 @@ impl App {
                     },
 
                     AppEvent::ShowInventory => {
-                        if self.widget_data.is_displayed(WidgetKind::Inventory) {
-                            self.widget_data.display_widget(WidgetKind::Inventory, false);
-                            self.widget_data
-                                .render_stack
-                                .retain(|k| *k != WidgetKind::Inventory);
-                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(first);
-                            }
-                        } else {
-                            self.widget_data.display_widget(WidgetKind::Inventory, true);
-                            self.widget_data.render_stack.push(WidgetKind::Inventory)
-                        }
+                        self.widget_data.display_widget(WidgetKind::Inventory, true);
+                        self.widget_data.render_stack.push(WidgetKind::Inventory)
                     },
-
-                    /* AppEvent::HideInventory => {
-                    } */
 
                     AppEvent::ShowPlayer => {
-                        if self.widget_data.is_displayed(WidgetKind::Player) {
-                            self.widget_data.display_widget(WidgetKind::Player, false);
-                            self.widget_data
-                                .render_stack
-                                .retain(|k| *k != WidgetKind::Player);
-                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(first);
-                            }
-                        } else {
-                            self.widget_data.display_widget(WidgetKind::Player, true);
-                            self.widget_data.render_stack.push(WidgetKind::Player)
-                        }
+                        self.widget_data.display_widget(WidgetKind::Player, true);
+                        self.widget_data.render_stack.push(WidgetKind::Player)
                     },
-
-                    AppEvent::HidePopup(kind) => {
-                    }
 
                     AppEvent::FocusShotgun => {
                         self.widget_data.toggle_focus(WidgetKind::Shotgun);
                     },
+
                     AppEvent::ScrollUp => {
                         /* if self.logger.log_scroll > 0 {
                             self.logger.scroll_up();
@@ -227,15 +213,7 @@ impl App {
             //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPlayer),
             KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
-            KeyCode::Char('x' | 'X') => {
-                if let Some(current_focus) = self.widget_data.get_focus() {
-                    self.widget_data.render_stack.retain(|k| *k != current_focus);
-                    if !self.widget_data.render_stack.is_empty() {
-                        let next_to_focus = self.widget_data.render_stack.first().unwrap();
-                        self.widget_data.set_focus(next_to_focus);
-                    }
-                }
-            },
+            KeyCode::Char('x' | 'X') => self.events.send(AppEvent::HidePopup(self.widget_data.get_focus())),
 
             KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
             KeyCode::Char('j') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollDown),

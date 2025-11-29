@@ -69,7 +69,7 @@ pub struct WidgetData{
     inventory: WidgetState,
     player: WidgetState,
     shotgun: WidgetState,
-    
+
     confirmation: WidgetState,
 
     current_focus: Option<WidgetKind>,
@@ -211,16 +211,15 @@ impl WidgetData {
         }
     }
 
-    pub fn is_displayed(&self, kind: WidgetKind) -> bool{
-        let widget_state = match kind {
+    pub fn get_state(&self, kind: WidgetKind) -> &WidgetState {
+        match kind {
             WidgetKind::Log => &self.log,
             WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
             WidgetKind::Player => &self.player,
             WidgetKind::Shotgun => &self.shotgun,
             WidgetKind::Confirmation => &self.confirmation,
-        };
-        widget_state.display
+        }
     }
 
     pub fn is_focused(&self, kind: WidgetKind) -> bool{
@@ -229,11 +228,6 @@ impl WidgetData {
 
     pub fn get_focus(&self) -> Option<WidgetKind> {
         self.current_focus
-    }
-
-    pub fn set_focus(&mut self, kind: Option<WidgetKind>) {
-        self.current_focus = kind;
-        //add in a match or whatever to change the appropriate widget_state
     }
 
     pub fn toggle_focus(&mut self, kind: WidgetKind) {
@@ -254,15 +248,16 @@ impl WidgetData {
         }
     }
 
-    pub fn get_state(&self, kind: WidgetKind) -> &WidgetState {
-        match kind {
+    pub fn is_displayed(&self, kind: WidgetKind) -> bool{
+        let widget_state = match kind {
             WidgetKind::Log => &self.log,
             WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
             WidgetKind::Player => &self.player,
             WidgetKind::Shotgun => &self.shotgun,
             WidgetKind::Confirmation => &self.confirmation,
-        }
+        };
+        widget_state.display
     }
 
     pub fn display_widget(&mut self, kind: WidgetKind, focus_new: bool) {
@@ -273,7 +268,7 @@ impl WidgetData {
             }
 
             self.get_mut_widget(kind).focus = true;
-            self.set_focus(Some(kind));
+            self.kind_focus(kind);
             self.get_mut_widget(kind).display = true;
         } else {
             self.get_mut_widget(kind).display = true;
@@ -281,7 +276,16 @@ impl WidgetData {
     }
 
     pub fn hide_widget(&mut self, kind: WidgetKind) {
-            self.get_mut_widget(kind).display = false;
+
+        //this is why you pass by reference I guess
+        let kind_copy = kind;
+        let widget_kind_ref = self.get_mut_widget(kind);
+        widget_kind_ref.display = false;
+        widget_kind_ref.focus = false;
+        if self.current_focus == Some(kind_copy) {
+            self.focus_next();
+        }
+
     }
 
     //TODO: edit this function so that it works correctly with edge cases
@@ -292,18 +296,38 @@ impl WidgetData {
         self.player.focus = false;
         self.shotgun.focus = false;
         self.confirmation.focus = false;
+
+        self.current_focus = None;
     }
 
     pub fn kind_focus(&mut self, kind: WidgetKind){
         self.remove_focus();
 
         match kind {
-            WidgetKind::Log => self.log.focus = true,
-            WidgetKind::Data => self.data.focus = true,
-            WidgetKind::Inventory => self.inventory.focus = true,
-            WidgetKind::Player => self.player.focus = true,
-            WidgetKind::Shotgun => self.shotgun.focus = true,
-            WidgetKind::Confirmation => self.confirmation.focus = true,
+            WidgetKind::Log => {
+                self.log.focus = true;
+                self.current_focus = Some(WidgetKind::Log);
+            },
+            WidgetKind::Data => {
+                self.data.focus = true;
+                self.current_focus = Some(WidgetKind::Data)
+            },
+            WidgetKind::Inventory => {
+                self.inventory.focus = true;
+                self.current_focus = Some(WidgetKind::Inventory);
+            },
+            WidgetKind::Player => {
+                self.player.focus = true;
+                self.current_focus = Some(WidgetKind::Player)
+            },
+            WidgetKind::Shotgun => {
+                self.shotgun.focus = true;
+                self.current_focus = Some(WidgetKind::Shotgun)
+            },
+            WidgetKind::Confirmation => {
+                self.confirmation.focus = true;
+                self.current_focus = Some(WidgetKind::Confirmation);
+            },
         }
     }
 
