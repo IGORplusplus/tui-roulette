@@ -106,7 +106,7 @@ impl App {
                             }
                             self.logger.send_log(Some(msg));
                             //if I shoot it becomes the focus
-                            self.widget_data.display_widget(WidgetKind::Shotgun, true);
+                            // self.widget_data.display_widget(WidgetKind::Shotgun, true);
                         }
                     },
 
