@@ -33,8 +33,6 @@ pub enum Event {
 /// You can extend this enum with your own custom events.
 #[derive(Clone, Debug)]
 pub enum AppEvent {
-    /// Quit the application.
-    Quit,
 
     ///GAME EVENTS
     /// Reload
@@ -42,22 +40,12 @@ pub enum AppEvent {
     /// Shoot
     Shoot,
 
-
     ///UI EVENTS
-   /// Popup screen
-    ShowData,
-    /// Show log
-    ShowLog,
-    /// Show inventory
-    ShowInventory,
-    /// Show player
-    ShowPlayer,
-    /// Show shotgun
-    FocusShotgun,
-    /// Hide the log
-    HideLog,
+    ShowPopup(Option<WidgetKind>),
     /// generic hide popup function
     HidePopup(Option<WidgetKind>),
+    /// Focus shotgun
+    FocusShotgun,
     /// Scroll the log up
     ScrollUp,
     /// Scroll the log down
@@ -66,6 +54,9 @@ pub enum AppEvent {
     ChangeFocus,
     /// Change focus back
     ChangeFocusBack,
+
+    /// Quit the application.
+    Quit,
 }
 
 /// Terminal event handler.

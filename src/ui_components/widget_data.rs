@@ -161,7 +161,7 @@ impl WidgetData {
         // Start searching from the next index
         let mut next_idx = match current_idx {
             Some(i) => (i + 1) % order.len(),
-            None => 0,
+            _ => 0,
         };
 
         // Loop until we find a displayed (and allowed) widget
@@ -176,6 +176,7 @@ impl WidgetData {
 
             if self.get(kind).display {
                 self.get_mut_widget(kind).focus = true;
+                self.current_focus = Some(kind);
                 return;
             }
 
@@ -283,7 +284,7 @@ impl WidgetData {
         widget_kind_ref.display = false;
         widget_kind_ref.focus = false;
         if self.current_focus == Some(kind_copy) {
-            self.focus_next();
+            self.current_focus = None;
         }
 
     }

@@ -119,7 +119,7 @@ fn render_data_popup(app: &App, frame: &mut Frame) {
     let term_width = term_area.width;
     let term_height = term_area.height;
 
-    let width = term_width * 30 / 100;
+    let width = term_width * 50 / 100;
     let height = term_height * 30 / 100;
     let area = Rect {
         x: 1,

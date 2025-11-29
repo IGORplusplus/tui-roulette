@@ -109,26 +109,19 @@ impl App {
                             self.widget_data.display_widget(WidgetKind::Shotgun, true);
                         }
                     },
-                    AppEvent::ShowData => {
-                        if self.widget_data.is_displayed(WidgetKind::Data) {
-                            self.widget_data.display_widget(WidgetKind::Data, true);
-                            self.widget_data.kind_focus(WidgetKind::Data);
-                            if let Some(first) = self.widget_data.render_stack.first().cloned() {
-                                self.widget_data.kind_focus(first);
-                            }
-                            /* if let Some(first) = self.widget_data.render_stack.iter().find(|w| **w != WidgetKind::Shotgun).cloned() {
-                                self.widget_data.kind_focus(&first);
-                            } */
-                        } else {
-                            self.widget_data.display_widget(WidgetKind::Data, true);
-                            //this is to get the rendering in the right order
-                            self.widget_data.render_stack.push(WidgetKind::Data)
-                        }
+
+                    AppEvent::ShowPopup(kind) => {
+                        let kind = match kind {
+                            Some(_) => kind.unwrap(),
+                            _ => continue,
+                        };
+
+                        self.widget_data.display_widget(kind, true);
+                        self.widget_data.render_stack.push(kind);
                     },
 
                     //kind is Option<WidgetKind>
                     AppEvent::HidePopup(kind) => {
-
                         //widget logic
                         let kind_copy = kind;
                         match kind_copy {
@@ -143,35 +136,6 @@ impl App {
                             self.widget_data.focus_next();
                         }
                         
-                    },
-
-                    AppEvent::ShowLog => {
-                        self.widget_data.display_widget(WidgetKind::Log, true);
-                        self.widget_data.render_stack.push(WidgetKind::Log)
-                    },
-
-                    AppEvent::HideLog => {
-                        if self.widget_data.render_stack.contains(&WidgetKind::Log) {
-                            self.widget_data.display_widget(WidgetKind::Log, false);
-                            self.widget_data
-                                .render_stack
-                                .retain(|k| *k != WidgetKind::Log);
-
-                            if !self.widget_data.render_stack.is_empty() {
-                                let next_to_focus = self.widget_data.render_stack.first().unwrap().to_owned();
-                                self.widget_data.kind_focus(next_to_focus);
-                            }
-                        }
-                    },
-
-                    AppEvent::ShowInventory => {
-                        self.widget_data.display_widget(WidgetKind::Inventory, true);
-                        self.widget_data.render_stack.push(WidgetKind::Inventory)
-                    },
-
-                    AppEvent::ShowPlayer => {
-                        self.widget_data.display_widget(WidgetKind::Player, true);
-                        self.widget_data.render_stack.push(WidgetKind::Player)
                     },
 
                     AppEvent::FocusShotgun => {
@@ -207,11 +171,17 @@ impl App {
             KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
             KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
-            }
-            KeyCode::Char('d' | 'D') => self.events.send(AppEvent::ShowData),
-            KeyCode::Char('l' | 'L') => self.events.send(AppEvent::ShowLog),
+            },
+
+            KeyCode::Char('d' | 'D') => {
+                self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Data)))
+            },
+            KeyCode::Char('l' | 'L') => {
+                self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Log)));
+            },
+
             //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
-            KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPlayer),
+            KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Player))),
             KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
             KeyCode::Char('x' | 'X') => self.events.send(AppEvent::HidePopup(self.widget_data.get_focus())),
 
