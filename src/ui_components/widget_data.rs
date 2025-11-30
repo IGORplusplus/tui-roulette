@@ -25,6 +25,16 @@ impl WidgetState {
         }
     }
 
+    pub fn new_shotgun_blank() -> WidgetState {
+        WidgetState {
+            display: false,
+            focus: false,
+            area: None,
+            content: None,
+            color: Some(Color::Red),
+        }
+    }
+
     pub fn new_content(content: &str) -> WidgetState{
         let content: String = content.to_string();
         WidgetState {
@@ -118,7 +128,7 @@ impl WidgetData {
             WidgetKind::Data,
             WidgetKind::Inventory,
             WidgetKind::Player,
-            WidgetKind::Shotgun,
+            WidgetKind::Confirmation,
         ]
     }
 
@@ -148,7 +158,10 @@ impl WidgetData {
     pub fn focus_next(&mut self) {
         let order = Self::order();
 
-        let log_displayed = self.get(WidgetKind::Log).display;
+        let confirmation_displayed = self.get(WidgetKind::Confirmation).display;
+        if confirmation_displayed == true {
+            return;
+        }
 
         // Find current focus index
         let current_idx = order.iter().position(|&kind| self.get(kind).focus);
@@ -168,12 +181,6 @@ impl WidgetData {
         for _ in 0..order.len() {
             let kind = order[next_idx];
 
-            //TODO: why is the shotgun discriminated here?
-            if log_displayed && kind == WidgetKind::Shotgun {
-                next_idx = (next_idx + 1) % order.len();
-                continue;
-            }
-
             if self.get(kind).display {
                 self.get_mut_widget(kind).focus = true;
                 self.current_focus = Some(kind);
@@ -186,6 +193,11 @@ impl WidgetData {
 
     pub fn focus_prev(&mut self) {
         let order = Self::order();
+
+        let confirmation_displayed = self.get(WidgetKind::Confirmation).display;
+        if confirmation_displayed == true {
+            return;
+        }
 
         // Find current focus index
         let current_idx = order.iter().position(|&kind| self.get(kind).focus);

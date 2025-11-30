@@ -191,18 +191,27 @@ fn render_inventory_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
 
 fn render_player_popup(app: &App, frame: &mut Frame) {
 
+    let frame_area = frame.area();
+    let w = 10;
+    let h = 10;
+
+    let w = w.min(frame_area.width);
+    let h = h.min(frame_area.height);
+
+    let x = frame_area.x + (frame_area.width - w) / 2;
+    let y = frame_area.y + (9 * (frame_area.height - h) / 10);
     let area = Rect {
-        x: 10,
-        y: 5,
-        width: 10,
-        height: 10,
+        x,
+        y,
+        width: w,
+        height: h,
     };
 
     // The "icon" — can be emoji, unicode, ASCII art, etc.
 
     let mut player_popup = Paragraph::new(PLAYER_ART)
         .block(Block::default().title("Popup").borders(Borders::NONE));
-    if app.widget_data.is_focused(WidgetKind::Data) {
+    if app.widget_data.is_focused(WidgetKind::Player) {
         player_popup = player_popup.set_style(Style::default().fg(Color::LightRed))
     }
 

@@ -182,9 +182,8 @@ impl App {
 
             //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Player))),
-            KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
+            // KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
             KeyCode::Char('x' | 'X') => self.events.send(AppEvent::HidePopup(self.widget_data.get_focus())),
-
             KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
             KeyCode::Char('j') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollDown),
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
