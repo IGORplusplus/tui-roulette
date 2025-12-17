@@ -43,7 +43,7 @@ pub enum AppEvent {
     ///UI EVENTS
     ShowPopup(Option<WidgetKind>),
     /// generic hide popup function
-    HidePopup(Option<WidgetKind>),
+    HideFocusedPopup,
     /// Focus shotgun
     FocusShotgun,
     /// Scroll the log up

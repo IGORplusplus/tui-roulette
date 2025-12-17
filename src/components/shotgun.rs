@@ -1,29 +1,44 @@
 //shotgun.rs
 use rand::{ Rng, seq::SliceRandom, thread_rng, distributions::{WeightedIndex, Distribution} };
-use std::cell::RefCell;
+use std::{cell::RefCell, fmt::format};
+
+use tokio::sync::Mutex;
+use tokio::time::{sleep, Duration};
+use std::sync::Arc;
+
+use crate::{components::{enums::ShotgunCycleView, shotgun}, ui_components::widget_data::{self, WidgetData}};
 
 #[derive(Debug, Default, Clone)]
 pub struct Shotgun {
-    pub shells: RefCell<Vec<Shell>>,
-    pub state: ShotgunState,
+    pub shells: Arc<Mutex<Vec<Shell>>>,
+    pub state: Arc<Mutex<ShotgunState>>,
     pub model: ShotgunModel,
+    pub cycle: Arc<Mutex<ShotgunCycle>>,
 }
 
 #[derive(Debug, Default, Clone)]
-pub enum ShotgunModel {
+enum ShotgunModel {
     #[default]
-    Default,
+    Stock,
     Revolver, //does twice the amount of damage
 }
 
 #[derive(Debug, Default, Clone)]
-pub enum ShotgunState {
+enum ShotgunState {
     #[default]
-    Default,
+    Stock,
     SawedOff, //does twice the amount of damage
     Rusty, //permanent until next round misfire chance increased
     ThickBarrel, //impossible to saw off
     Reinforced, //Destruct shell becomes offensive but also destroys the shotgun
+}
+
+#[derive(Debug, Default, Clone)]
+pub enum ShotgunCycle {
+    #[default]
+    Ready,
+    Shooting,
+    Reloading
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -31,9 +46,9 @@ pub enum Shell {
     Live,
     #[default]
     Blank,
-    Poison, //
+    Poison,
     BeanBag, //makes player stunned for the next turn, so can only use one item
-    Taser, //
+    Taser,
     Imposter, //looks like a blank but isn't
     SelfDestruct, //blows up in the person's face if not reinforced
 }
@@ -41,25 +56,53 @@ pub enum Shell {
 //BeanBag round limits the player to only use one item
 //Russian Roulette item, play russian roulette for a turn instead of the shotgun
 
-
-
 impl Shotgun {
 
     pub fn new() -> Shotgun {
         Shotgun {
-            shells: RefCell::new(Vec::new()),
-            state: ShotgunState::Default,
-            model: ShotgunModel::Default,
+            shells: Arc::new(Mutex::new(Vec::new())),
+            state: Arc::new(Mutex::new(ShotgunState::default())),
+            model: ShotgunModel::default(),
+            cycle: Arc::new(Mutex::new(ShotgunCycle::default())),
         }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.shells.borrow().is_empty()
+    pub async fn is_empty(&self) -> bool {
+        self.shells.lock().await.is_empty()
     }
 
-    pub fn load(&self,all_shells: Vec<Shell>, weights: Vec<usize>, num_shells: usize) {
+    pub async fn reload_with(&self, all_shells: Vec<Shell>, weights: Vec<usize>, num_shells: usize ) -> Option<String> {
+        {
+            let cycle = self.cycle.lock().await;
+            if !matches!(*cycle, ShotgunCycle::Ready) {
+                return Some("Shotgun is busy".to_string());
+            }
+        }
+
+        // 2. Enter Reloading
+        {
+            let mut cycle = self.cycle.lock().await;
+            *cycle = ShotgunCycle::Reloading;
+        }
+
+        // 3. Simulate reload time
+        sleep(Duration::from_millis(800)).await;
+
+        // 4. Actually load shells
+        self.load(all_shells, weights, num_shells).await;
+
+        // 5. Back to Ready
+        {
+            let mut cycle = self.cycle.lock().await;
+            *cycle = ShotgunCycle::Ready;
+        }
+
+        Some("Reloaded shotgun".to_string())
+    }
+
+    async fn load(&self, all_shells: Vec<Shell>, weights: Vec<usize>, num_shells: usize) {
         let mut rng = thread_rng();
-        let mut shells = self.shells.borrow_mut();
+        let mut shells = self.shells.lock().await;
         shells.clear();
 
         let dist = WeightedIndex::new(&weights)
@@ -79,7 +122,7 @@ impl Shotgun {
         }
     }
 
-    pub fn load_random_shells(&self, num_shells: usize) {
+    pub async fn reload_random_shells(&self, num_shells: usize) -> Option<String> {
         let all_shells = vec![
             Shell::Live,
             Shell::Blank,
@@ -97,9 +140,7 @@ impl Shotgun {
             1, //Taser
             1, //Imposter
         ];
-
-
-        self.load(all_shells, weights, num_shells);
+        self.reload_with(all_shells, weights, num_shells).await
     }
 
     pub fn load_default_shells(&self, num_shells: usize) {
@@ -115,16 +156,49 @@ impl Shotgun {
         self.load(all_shells, weights, num_shells);
     }
 
-    pub fn shoot(&self) -> Option<String>{
-        let mut shell_borrow = self.shells.borrow_mut();
-        if let Some(popped_shell) = shell_borrow.pop() {
-            if shell_borrow.is_empty() {
-                Some(format!("Last shell in shotgun: {:?}", popped_shell))
-            } else {
-                Some(format!("Popped shell: {:?}", popped_shell))
+    pub async fn shoot(&self, widget_data: Arc<Mutex<WidgetData>>) -> Option<String> {
+        {
+            let cycle = self.cycle.lock().await;
+            if !matches!(*cycle, ShotgunCycle::Ready) {
+                return Some(String::from("Some shotgun is busy"));
             }
-        } else {
-            Some("No shell in shotgun".to_string())
         }
+
+        let msg = {
+            let mut shells = self.shells.lock().await;
+            if let Some(shell) = shells.pop() {
+                if shells.is_empty() {
+                    Some(format!("Last shell in shotgun: {:?}", shell))
+                } else {
+                    Some(format!("Popped Shell {:?}, {} shells left", shell, shells.len()))
+                }
+            } else {
+                Some(String::from("No shell in shotgun"))
+            }
+        };
+
+        {
+            let mut cycle = self.cycle.lock().await;
+            *cycle = ShotgunCycle::Shooting;
+        }
+
+        {
+            let mut snapshot = widget_data.lock().await;
+            snapshot.shotgun_cycle_view = ShotgunCycleView::Shooting;
+        }
+
+        let cycle_clone = Arc::clone(&self.cycle);
+        let widget_data_clone = Arc::clone(&widget_data);
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+
+            let mut cycle = cycle_clone.lock().await;
+            *cycle = ShotgunCycle::Ready;
+
+            let mut snapshot = widget_data_clone.lock().await;
+            snapshot.shotgun_cycle_view = ShotgunCycleView::Ready;
+        });
+
+        msg
     }
 }

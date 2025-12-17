@@ -1,7 +1,11 @@
 use crossterm::terminal::disable_raw_mode;
+use tokio::sync::Mutex;
+use std::sync::Arc;
+
 //widget-data.rs
 use ratatui::layout::Rect;
 use crate::ui::{SHOTGUN_ART, BANG, CLICK};
+use crate::components::enums::ShotgunCycleView;
 
 use ratatui::style::{Color, Style, Stylize};
 
@@ -71,8 +75,8 @@ pub enum WidgetKind {
     Confirmation,
 }
 
-#[derive(Debug)]
-pub struct WidgetData{
+#[derive(Debug, Clone)]
+pub struct WidgetData {
     //these are a little redundant
     log: WidgetState,
     data: WidgetState,
@@ -83,6 +87,7 @@ pub struct WidgetData{
     confirmation: WidgetState,
 
     current_focus: Option<WidgetKind>,
+    pub shotgun_cycle_view: ShotgunCycleView,
 
     //render last in list first
     pub render_stack: Vec<WidgetKind>,
@@ -98,7 +103,9 @@ impl WidgetData {
             shotgun: WidgetState::new_content(SHOTGUN_ART),
 
             confirmation: WidgetState::new_blank(),
+
             current_focus: None,
+            shotgun_cycle_view: ShotgunCycleView::default(),
 
             render_stack: Vec::new(),
         }

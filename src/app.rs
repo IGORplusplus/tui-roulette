@@ -1,5 +1,9 @@
 //std library
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fmt::format};
+
+use tokio::sync::Mutex;
+use std::sync::Arc;
+
 
 //ratatui
 use ratatui::{
@@ -19,6 +23,8 @@ use crossterm::event::EnableMouseCapture;
 use crate::{data::Data, ui_components::widget_data};
 use crate::components::enums::ReloadAmount;
 use crate::components::match_data::*;
+use crate::components::enums::ShotgunCycleView;
+use crate::components::shotgun::ShotgunCycle;
 use crate::ui_components::widget_data::{WidgetData, WidgetKind};
 use crate::event::{AppEvent, Event, EventHandler};
 use crate::ui;
@@ -36,7 +42,7 @@ pub struct App {
     /// match data
     pub match_data: MatchData,
     ///holds the information of the widgets
-    pub widget_data: WidgetData,
+    pub widget_data: Arc<Mutex<WidgetData>>,
     /// logger will replace log, and it will automatically size to the correct screen size
     pub logger: Logger,
 }
@@ -48,7 +54,7 @@ impl Default for App {
             events: EventHandler::new(),
             data: Data::new(),
             match_data: MatchData::new(),
-            widget_data: WidgetData::new(),
+            widget_data: Arc::new(Mutex::new(WidgetData::new())),
             logger: Logger::new(),
         }
     }
@@ -76,6 +82,12 @@ impl App {
         crossterm::execute!(std::io::stdout(), EnableMouseCapture)?;
 
         while self.running {
+
+            let widget_data_snapshot = {
+                let widget_data = self.widget_data.lock().await;
+                widget_data.clone()
+            };
+            
             terminal.draw(|frame| {
 
                 //changing logger's capacity
@@ -83,7 +95,7 @@ impl App {
                 let max_window_lines = ( area.height as f32 / 1.45 ) as usize;
                 self.logger.set_window_size(max_window_lines);
                 self.logger.update_window();
-                self.render_ui(frame)})?;
+                self.app_render_ui(frame, &widget_data_snapshot)})?;
 
             match self.events.next().await? {
                 Event::Tick => self.tick(),
@@ -94,19 +106,29 @@ impl App {
                 },
                 Event::App(app_event) => match app_event {
                     AppEvent::Quit => self.quit(),
+
                     AppEvent::Reload(amount) => {
-                        self.data.shotgun.load_random_shells(amount.as_usize());
+                        if let Some(msg) = self.data.shotgun.reload_random_shells(amount.as_usize()).await {
+                            self.logger.send_log(Some(msg));
+
+                            let cycle = self.data.shotgun.cycle.lock().await;
+                            let mut widget_data = self.widget_data.lock().await;
+                            widget_data.shotgun_cycle_view = match *cycle {
+                                ShotgunCycle::Ready => ShotgunCycleView::Ready,
+                                ShotgunCycle::Shooting => ShotgunCycleView::Shooting,
+                                ShotgunCycle::Reloading => ShotgunCycleView::Reloading,
+                            };
+                        }
                     },
+
                     AppEvent::Shoot => {
-                        if let Some(msg) = self.data.shotgun.shoot() {
+                        if let Some(msg) = self.data.shotgun.shoot(Arc::clone(&self.widget_data)).await {
 
                             //not a very robust solution but it works for now
                             if msg.contains("Last") {
                                 self.match_data.next_round();
                             }
                             self.logger.send_log(Some(msg));
-                            //if I shoot it becomes the focus
-                            // self.widget_data.display_widget(WidgetKind::Shotgun, true);
                         }
                     },
 
@@ -116,30 +138,49 @@ impl App {
                             _ => continue,
                         };
 
-                        self.widget_data.display_widget(kind, true);
-                        self.widget_data.render_stack.push(kind);
+                        let mut widget_data = self.widget_data.lock().await;
+                        widget_data.display_widget(kind, true);
+                        widget_data.render_stack.push(kind);
                     },
 
                     //kind is Option<WidgetKind>
-                    AppEvent::HidePopup(kind) => {
+                    AppEvent::HideFocusedPopup => {
                         //widget logic
-                        let kind_copy = kind;
-                        match kind_copy {
-                            Some(k) => self.send_log(Some(format!("hiding {:?}", k).to_owned())),
-                            _ => continue,
-                        }
-                        if self.widget_data.is_displayed(kind_copy.unwrap()) {
-                            self.widget_data.hide_widget(kind.unwrap());
-                        }
-                        self.widget_data.render_stack.retain(|k| *k != kind.unwrap());
-                        if !self.widget_data.render_stack.is_empty() {
-                            self.widget_data.focus_next();
-                        }
+                        // Lock widget_data once
+                        let widget_data = self.widget_data.lock().await;
                         
+                        // Get the focused widget and copy it out
+                        let kind_opt = widget_data.get_focus();
+                        
+                        if let Some(kind) = kind_opt {
+                            // Drop the lock before calling send_log
+                            drop(widget_data);
+                            
+                            // Now it's safe to call send_log
+                            self.send_log(Some(format!("hiding {:?}", kind)));
+                            
+                            // Re-lock to modify widget_data
+                            let mut widget_data = self.widget_data.lock().await;
+                            
+                            // Hide the widget if it's displayed
+                            if widget_data.is_displayed(kind) {
+                                widget_data.hide_widget(kind);
+                            }
+                            
+                            // Update render stack
+                            widget_data.render_stack.retain(|k| *k != kind);
+                            
+                            // Focus next if anything is left
+                            if !widget_data.render_stack.is_empty() {
+                                widget_data.focus_next();
+                            }
+                        }
+
                     },
 
                     AppEvent::FocusShotgun => {
-                        self.widget_data.toggle_focus(WidgetKind::Shotgun);
+                        let mut widget_data = self.widget_data.lock().await;
+                        widget_data.toggle_focus(WidgetKind::Shotgun);
                     },
 
                     AppEvent::ScrollUp => {
@@ -151,10 +192,12 @@ impl App {
 /*                         self.logger.scroll_down(); */
                     },
                     AppEvent::ChangeFocus => {
-                        self.widget_data.focus_next();
+                        let mut widget_data = self.widget_data.lock().await;
+                        widget_data.focus_next();
                     },
                     AppEvent::ChangeFocusBack => {
-                        self.widget_data.focus_prev();
+                        let mut widget_data = self.widget_data.lock().await;
+                        widget_data.focus_prev();
                     },
                     _ => {
                         self.logger.send_log(Some(String::from("Failure to catch event")));
@@ -183,9 +226,11 @@ impl App {
             //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
             KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Player))),
             // KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
-            KeyCode::Char('x' | 'X') => self.events.send(AppEvent::HidePopup(self.widget_data.get_focus())),
-            KeyCode::Char('k') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollUp),
-            KeyCode::Char('j') if self.widget_data.is_focused(WidgetKind::Log) => self.events.send(AppEvent::ScrollDown),
+            KeyCode::Char('x' | 'X') => self.events.send(AppEvent::HideFocusedPopup),
+            KeyCode::Char('k') => {
+                    self.events.send(AppEvent::ScrollUp)
+            },
+            KeyCode::Char('j') => self.events.send(AppEvent::ScrollDown),
             KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
             KeyCode::Tab => self.events.send(AppEvent::ChangeFocus),
             KeyCode::Char('r' | 'R') => {
@@ -227,8 +272,8 @@ impl App {
         Ok(())
     }
 
-    fn render_ui(&mut self, frame: &mut Frame){
-        let log: Option<String> = ui::render_ui(self, frame);
+    fn app_render_ui(&mut self, frame: &mut Frame, widget_data: &WidgetData){
+        let log: Option<String> = ui::render_ui(self, frame, widget_data);
         self.logger.send_log(log);
     }
 

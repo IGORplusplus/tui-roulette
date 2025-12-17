@@ -21,3 +21,12 @@ impl ReloadAmount {
         self.clone() as usize
     }
 }
+
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Copy)]
+pub enum ShotgunCycleView {
+    #[default]
+    Ready,
+    Shooting,
+    Reloading,
+}

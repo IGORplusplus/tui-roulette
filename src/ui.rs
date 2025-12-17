@@ -7,7 +7,7 @@ use ratatui::{
 //add svg crate
 /* use svg::{Tree, NodeKind}; */
 
-use crate::ui_components::widget_data::{WidgetKind, WidgetData};
+use crate::{components::enums::ShotgunCycleView, ui_components::widget_data::{self, WidgetData, WidgetKind}};
 use crate::app::{ App };
 
 const PLAYER_ART: &str = r#"
@@ -69,7 +69,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
         .split(vertical[1])[1]
 }
 
-pub fn render_ui(app: &App, frame: &mut Frame) -> Option<String> {
+pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Option<String> {
     //will eventually get rid of this
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -92,21 +92,17 @@ pub fn render_ui(app: &App, frame: &mut Frame) -> Option<String> {
 
     frame.render_widget(&border, frame.area());
 
-    //this should happen after the round is begun
-    //render inventory
-    //render player
-    //render shotgun
-    render_shotgun_popup(app, frame);
+    //always on the bottom
+    render_shotgun_popup(app, frame, widget_data);
 
-    // does it in order of the "stack"
-    for kind in &app.widget_data.render_stack {
-        let state = app.widget_data.get_state(*kind);
+    for kind in &widget_data.render_stack {
+        let state = widget_data.get_state(*kind);
         if state.display {
             match kind {
-                WidgetKind::Data => render_data_popup(app, frame),
-                WidgetKind::Log => render_log_popup(app, frame),
-                WidgetKind::Inventory => render_inventory_popup(app, frame, &chunks),
-                WidgetKind::Player => render_player_popup(app, frame),
+                WidgetKind::Data => render_data_popup(app, frame, &widget_data),
+                WidgetKind::Log => render_log_popup(app, frame, &widget_data),
+                WidgetKind::Inventory => render_inventory_popup(app, frame, &widget_data, &chunks),
+                WidgetKind::Player => render_player_popup(app, frame, &widget_data),
                 _ => return Some("shotgun is already displayed by default".to_string()),
             }
         }
@@ -114,7 +110,22 @@ pub fn render_ui(app: &App, frame: &mut Frame) -> Option<String> {
     return None
 }
 
-fn render_data_popup(app: &App, frame: &mut Frame) {
+fn render_generic_popup(frame: &mut Frame, area: Rect, content: &str, focused: bool, color: Color) {
+    let mut popup = Paragraph::new(content)
+        .block(Block::default().title("Popup").borders(Borders::ALL))
+        .wrap(Wrap { trim: true })
+        .style(Style::default().fg(color));
+    
+    if focused {
+        popup = popup.set_style(Style::default().fg(Color::LightRed));
+    }
+    
+    frame.render_widget(Clear, area);
+    frame.render_widget(popup, area);
+}
+
+fn render_data_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
+
     let term_area = frame.area();
     let term_width = term_area.width;
     let term_height = term_area.height;
@@ -136,9 +147,9 @@ fn render_data_popup(app: &App, frame: &mut Frame) {
         .block(Block::default().title("Popup").borders(Borders::ALL))
         .wrap(Wrap { trim: true })
         .style(Style::default()
-            .fg(app.widget_data.get_color(&WidgetKind::Data).unwrap_or(Color::White))
+            .fg(widget_data.get_color(&WidgetKind::Data).unwrap_or(Color::White))
         );
-    if app.widget_data.is_focused(WidgetKind::Data) {
+    if widget_data.is_focused(WidgetKind::Data) {
         data_popup = data_popup.set_style(Style::default().fg(Color::LightRed));
     }
 
@@ -146,7 +157,8 @@ fn render_data_popup(app: &App, frame: &mut Frame) {
     frame.render_widget(data_popup, area);
 }
 
-fn render_log_popup(app: &App, frame: &mut Frame) {
+fn render_log_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
+
     let area = frame.area();
     let width = (area.width as f32 * 0.33) as u16;
     let height = (area.height as f32 * 0.75) as u16;
@@ -165,8 +177,8 @@ fn render_log_popup(app: &App, frame: &mut Frame) {
         .block(Block::default().title("Message Log - use j k to navigate").borders(Borders::ALL))
         .wrap(Wrap {trim: true})
         .scroll((( app.logger.log_scroll as u16), 0));
-    if app.widget_data.is_focused(WidgetKind::Log) {
-        log_popup = log_popup.set_style(Style::default().fg(Color::LightRed));
+    if widget_data.is_focused(WidgetKind::Log) {
+        log_popup = log_popup.set_style(Style::default().fg(widget_data.get_color(&WidgetKind::Log).unwrap_or(Color::White)));
     }
 
     frame.render_widget(Clear, area);
@@ -174,22 +186,23 @@ fn render_log_popup(app: &App, frame: &mut Frame) {
 }
 
 
-fn render_inventory_popup(app: &App, frame: &mut Frame, chunks: &[Rect]) {
+fn render_inventory_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData, chunks: &[Rect]) {
+
     let area = chunks[2];
     let log_content = app.logger.log.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n");
     let mut log_popup = Paragraph::new(log_content)
         .block(Block::default().title("Message Log").borders(Borders::ALL))
         .wrap(Wrap {trim: true})
         .scroll(((app.logger.log_scroll as u16), 0));
-    if app.widget_data.is_focused(WidgetKind::Inventory) {
-        log_popup = log_popup.set_style(Style::default().fg(Color::LightRed))
+    if widget_data.is_focused(WidgetKind::Inventory) {
+        log_popup = log_popup.set_style(Style::default().fg(widget_data.get_color(&WidgetKind::Inventory).unwrap_or(Color::White)))
     }
 
     frame.render_widget(Clear, area);
     frame.render_widget(log_popup, chunks[2]);
 }
 
-fn render_player_popup(app: &App, frame: &mut Frame) {
+fn render_player_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
 
     let frame_area = frame.area();
     let w = 10;
@@ -211,8 +224,8 @@ fn render_player_popup(app: &App, frame: &mut Frame) {
 
     let mut player_popup = Paragraph::new(PLAYER_ART)
         .block(Block::default().title("Popup").borders(Borders::NONE));
-    if app.widget_data.is_focused(WidgetKind::Player) {
-        player_popup = player_popup.set_style(Style::default().fg(Color::LightRed))
+    if widget_data.is_focused(WidgetKind::Player) {
+        player_popup = player_popup.set_style(Style::default().fg(widget_data.get_color(&WidgetKind::Player).unwrap_or(Color::White)))
     }
 
     frame.render_widget(Clear, area);
@@ -220,7 +233,8 @@ fn render_player_popup(app: &App, frame: &mut Frame) {
 }
 
 //begin changing "popups" to not be such as shotgun and inventory
-fn render_shotgun_popup(app: &App, frame: &mut Frame) {
+fn render_shotgun_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
+
     let frame_area = frame.area();
     let w = 68;
     let h = 10;
@@ -231,17 +245,19 @@ fn render_shotgun_popup(app: &App, frame: &mut Frame) {
     let y = frame_area.y + (frame_area.height - h) / 2;
 
     let area = Rect { x, y, width: w, height: h };
-    let mut shotgun_popup = Paragraph::new(SHOTGUN_ART)
-        .block(Block::default().borders(Borders::empty()));
 
-    if app.widget_data.is_focused(WidgetKind::Shotgun) {
-        shotgun_popup = shotgun_popup.set_style(Style::default().fg(Color::LightRed))
+    if widget_data.shotgun_cycle_view == ShotgunCycleView::Shooting {
+        let shotgun_popup = Paragraph::new(BANG)
+            .block(Block::default().borders(Borders::empty()));
+        frame.render_widget(Clear, area);
+        frame.render_widget(shotgun_popup, area);
+    } else {
+        let shotgun_popup = Paragraph::new(SHOTGUN_ART)
+            .block(Block::default().borders(Borders::empty()));
+        frame.render_widget(Clear, area);
+        frame.render_widget(shotgun_popup, area);
     }
-
-    frame.render_widget(Clear, area);
-    frame.render_widget(shotgun_popup, area);
 }
-
 
 //want to make a popup to confirm things
 fn render_confirm_popup(app: &App, frame: &mut Frame) {
