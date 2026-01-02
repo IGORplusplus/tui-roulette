@@ -37,8 +37,14 @@ enum ShotgunState {
 pub enum ShotgunCycle {
     #[default]
     Ready,
+    Reloading,
+    //default
     Shooting,
-    Reloading
+    Blanking,
+    Tasing,
+    Imposter,
+    SelfDestruct,
+    Poison,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -157,6 +163,7 @@ impl Shotgun {
     }
 
     pub async fn shoot(&self, widget_data: Arc<Mutex<WidgetData>>) -> Option<String> {
+
         {
             let cycle = self.cycle.lock().await;
             if !matches!(*cycle, ShotgunCycle::Ready) {
@@ -164,16 +171,24 @@ impl Shotgun {
             }
         }
 
+        let shell_art_helper;
+
         let msg = {
             let mut shells = self.shells.lock().await;
             if let Some(shell) = shells.pop() {
+                match shell {
+                    Shell::Live => shell_art_helper = ShotgunCycleView::Shooting,
+                    Shell::Blank => shell_art_helper = ShotgunCycleView::Blanking,
+                    Shell::Taser => shell_art_helper = ShotgunCycleView::Tasing,
+                    _ => shell_art_helper = ShotgunCycleView::Ready,
+                };
                 if shells.is_empty() {
                     Some(format!("Last shell in shotgun: {:?}", shell))
                 } else {
                     Some(format!("Popped Shell {:?}, {} shells left", shell, shells.len()))
                 }
             } else {
-                Some(String::from("No shell in shotgun"))
+                return Some(String::from("No shell in shotgun"));
             }
         };
 
@@ -184,7 +199,7 @@ impl Shotgun {
 
         {
             let mut snapshot = widget_data.lock().await;
-            snapshot.shotgun_cycle_view = ShotgunCycleView::Shooting;
+            snapshot.shotgun_cycle_view = shell_art_helper;
         }
 
         let cycle_clone = Arc::clone(&self.cycle);

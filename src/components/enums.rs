@@ -27,6 +27,11 @@ impl ReloadAmount {
 pub enum ShotgunCycleView {
     #[default]
     Ready,
-    Shooting,
     Reloading,
+    Shooting,
+    Blanking,
+    Tasing,
+    Imposter,
+    SelfDestruct,
+    Poison
 }

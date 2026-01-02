@@ -117,6 +117,8 @@ impl App {
                                 ShotgunCycle::Ready => ShotgunCycleView::Ready,
                                 ShotgunCycle::Shooting => ShotgunCycleView::Shooting,
                                 ShotgunCycle::Reloading => ShotgunCycleView::Reloading,
+                                ShotgunCycle::Blanking => ShotgunCycleView::Blanking,
+                                _ => ShotgunCycleView::Ready,
                             };
                         }
                     },
@@ -231,7 +233,8 @@ impl App {
                     self.events.send(AppEvent::ScrollUp)
             },
             KeyCode::Char('j') => self.events.send(AppEvent::ScrollDown),
-            KeyCode::Tab if key_event.modifiers == KeyModifiers::CONTROL => self.events.send(AppEvent::ChangeFocusBack),
+            //need to find a key that isn't escaped
+            // KeyCode::Char('t') => self.events.send(AppEvent::ChangeFocusBack),
             KeyCode::Tab => self.events.send(AppEvent::ChangeFocus),
             KeyCode::Char('r' | 'R') => {
                 match self.match_data.round_count() {

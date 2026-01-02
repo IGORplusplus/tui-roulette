@@ -43,6 +43,10 @@ pub const CLICK: &str = r#"
                                                             ""    `,  _,--....___    |
                                                                     `/           """"
 "#;
+
+pub const ZAP: &str = r#"
+"#;
+
 pub const SHELL: &str = r#"
 ┏━┛┃ ┃┏━┛┃  ┃
 ━━┃┏━┃┏━┛┃  ┃
@@ -110,7 +114,7 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
     return None
 }
 
-fn render_generic_popup(frame: &mut Frame, area: Rect, content: &str, focused: bool, color: Color) {
+/* fn render_generic_popup(frame: &mut Frame, area: Rect, content: &str, focused: bool, color: Color) {
     let mut popup = Paragraph::new(content)
         .block(Block::default().title("Popup").borders(Borders::ALL))
         .wrap(Wrap { trim: true })
@@ -122,7 +126,7 @@ fn render_generic_popup(frame: &mut Frame, area: Rect, content: &str, focused: b
     
     frame.render_widget(Clear, area);
     frame.render_widget(popup, area);
-}
+} */
 
 fn render_data_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
 
@@ -234,28 +238,73 @@ fn render_player_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
 
 //begin changing "popups" to not be such as shotgun and inventory
 fn render_shotgun_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
-
     let frame_area = frame.area();
-    let w = 68;
-    let h = 10;
-    let w = w.min(frame_area.width);
-    let h = h.min(frame_area.height);
+    match widget_data.shotgun_cycle_view {
+        ShotgunCycleView::Shooting => {
+            //find the correct values here
+            let w = 120;
+            let h = 10;
+            let w = w.min(frame_area.width);
+            let h = h.min(frame_area.height);
 
-    let x = frame_area.x + (frame_area.width - w) / 2;
-    let y = frame_area.y + (frame_area.height - h) / 2;
+            let x = frame_area.x + (frame_area.width - w) / 2;
+            let y = frame_area.y + (frame_area.height - h) / 2;
 
-    let area = Rect { x, y, width: w, height: h };
+            let area = Rect { x, y, width: w, height: h };
 
-    if widget_data.shotgun_cycle_view == ShotgunCycleView::Shooting {
-        let shotgun_popup = Paragraph::new(BANG)
-            .block(Block::default().borders(Borders::empty()));
-        frame.render_widget(Clear, area);
-        frame.render_widget(shotgun_popup, area);
-    } else {
-        let shotgun_popup = Paragraph::new(SHOTGUN_ART)
-            .block(Block::default().borders(Borders::empty()));
-        frame.render_widget(Clear, area);
-        frame.render_widget(shotgun_popup, area);
+            let shotgun_popup = Paragraph::new(BANG)
+                .block(Block::default().borders(Borders::empty()));
+            frame.render_widget(Clear, area);
+            frame.render_widget(shotgun_popup, area);
+        },
+        ShotgunCycleView::Blanking => {
+            let w = 100;
+            let h = 10;
+            let w = w.min(frame_area.width);
+            let h = h.min(frame_area.height);
+
+            let x = frame_area.x + (frame_area.width - w) / 2;
+            let y = frame_area.y + (frame_area.height - h) / 2;
+
+            let area = Rect { x, y, width: w, height: h };
+
+            let shotgun_popup = Paragraph::new(CLICK)
+                .block(Block::default().borders(Borders::empty()));
+            frame.render_widget(Clear, area);
+            frame.render_widget(shotgun_popup, area);
+        },
+        ShotgunCycleView::Reloading => {
+            let w = 68;
+            let h = 10;
+            let w = w.min(frame_area.width);
+            let h = h.min(frame_area.height);
+
+            let x = frame_area.x + (frame_area.width - w) / 2;
+            let y = frame_area.y + (frame_area.height - h) / 2;
+
+            let area = Rect { x, y, width: w, height: h };
+
+            let shotgun_popup = Paragraph::new(SHOTGUN_ART)
+                .block(Block::default().borders(Borders::empty()));
+            frame.render_widget(Clear, area);
+            frame.render_widget(shotgun_popup, area);
+        },
+        _=> {
+            let w = 68;
+            let h = 10;
+            let w = w.min(frame_area.width);
+            let h = h.min(frame_area.height);
+
+            let x = frame_area.x + (frame_area.width - w) / 2;
+            let y = frame_area.y + (frame_area.height - h) / 2;
+
+            let area = Rect { x, y, width: w, height: h };
+
+            let shotgun_popup = Paragraph::new(SHOTGUN_ART)
+                .block(Block::default().borders(Borders::empty()));
+            frame.render_widget(Clear, area);
+            frame.render_widget(shotgun_popup, area);
+        }
     }
 }
 

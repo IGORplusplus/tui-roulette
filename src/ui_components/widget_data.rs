@@ -1,3 +1,4 @@
+// use crossterm::style::Color;
 use crossterm::terminal::disable_raw_mode;
 use tokio::sync::Mutex;
 use std::sync::Arc;
@@ -29,7 +30,7 @@ impl WidgetState {
         }
     }
 
-    pub fn new_shotgun_blank() -> WidgetState {
+    /* pub fn new_shotgun_blank() -> WidgetState {
         WidgetState {
             display: false,
             focus: false,
@@ -37,16 +38,16 @@ impl WidgetState {
             content: None,
             color: Some(Color::Red),
         }
-    }
+    } */
 
-    pub fn new_content(content: &str) -> WidgetState{
+    pub fn new_content(content: &str, color: Option<Color>) -> WidgetState{
         let content: String = content.to_string();
         WidgetState {
             display: true,
             focus: true,
             area: None,
             content: Some(content),
-            color: Some(Color::White),
+            color: color,
         }
     }
 
@@ -87,6 +88,7 @@ pub struct WidgetData {
     confirmation: WidgetState,
 
     current_focus: Option<WidgetKind>,
+    //this is to be viewed by the ui
     pub shotgun_cycle_view: ShotgunCycleView,
 
     //render last in list first
@@ -100,7 +102,7 @@ impl WidgetData {
             data: WidgetState::new_blank(),
             inventory: WidgetState::new_blank(),
             player: WidgetState::new_blank(),
-            shotgun: WidgetState::new_content(SHOTGUN_ART),
+            shotgun: WidgetState::new_content(SHOTGUN_ART, Some(Color::Red)),
 
             confirmation: WidgetState::new_blank(),
 
@@ -191,6 +193,8 @@ impl WidgetData {
             if self.get(kind).display {
                 self.get_mut_widget(kind).focus = true;
                 self.current_focus = Some(kind);
+                self.render_stack.retain(|&k| k != kind);
+                self.render_stack.push(kind);
                 return;
             }
 
@@ -210,21 +214,27 @@ impl WidgetData {
         let current_idx = order.iter().position(|&kind| self.get(kind).focus);
 
         // Clear all focus
-        for kind in order {
-            self.get_mut_widget(kind).focus = false;
+        for kind in order.iter() {
+            self.get_mut_widget(*kind).focus = false;
         }
-
+        
+        let len = order.len();
         // Start searching from the previous index
         let mut prev_idx = match current_idx {
-            Some(0) => order.len() - 1,
+            Some(0) | None => len - 1,
             Some(i) => i - 1,
-            None => order.len() - 1,
         };
 
         // Loop until we find a displayed widget
         for _ in 0..order.len() {
-            if self.get(order[prev_idx]).display {
-                self.get_mut_widget(order[prev_idx]).focus = true;
+            let kind = order[prev_idx];
+
+            if self.get(kind).display {
+                self.get_mut_widget(kind).focus = true;
+                self.current_focus = Some(kind);
+
+                self.render_stack.retain(|&k| k != kind);
+                self.render_stack.push(kind);
                 return;
             }
             prev_idx = if prev_idx == 0 { order.len() - 1 } else { prev_idx - 1 };
@@ -286,7 +296,6 @@ impl WidgetData {
             if let Some(prev_kind) = self.get_focus() {
                 self.get_mut_widget(prev_kind).focus = false;
             }
-
             self.get_mut_widget(kind).focus = true;
             self.kind_focus(kind);
             self.get_mut_widget(kind).display = true;
@@ -308,7 +317,6 @@ impl WidgetData {
 
     }
 
-    //TODO: edit this function so that it works correctly with edge cases
     pub fn remove_focus(&mut self) {
         self.log.focus = false;
         self.data.focus = false;
@@ -326,10 +334,12 @@ impl WidgetData {
         match kind {
             WidgetKind::Log => {
                 self.log.focus = true;
+                self.log.color = Some(Color::LightRed);
                 self.current_focus = Some(WidgetKind::Log);
             },
             WidgetKind::Data => {
                 self.data.focus = true;
+                self.data.color = Some(Color::LightRed);
                 self.current_focus = Some(WidgetKind::Data)
             },
             WidgetKind::Inventory => {
@@ -338,6 +348,7 @@ impl WidgetData {
             },
             WidgetKind::Player => {
                 self.player.focus = true;
+                self.player.color = Some(Color::LightRed);
                 self.current_focus = Some(WidgetKind::Player)
             },
             WidgetKind::Shotgun => {
