@@ -3,7 +3,7 @@ use rand::thread_rng;
 
 //local and online multiplayer, and singleplayer
 //multiplayer items easier to pull off, ten second timer is when a shot could be first fired
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Items {
     Saw, //doubles damage
     Beer, //ejects the next shell

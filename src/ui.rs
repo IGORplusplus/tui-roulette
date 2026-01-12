@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use ratatui::{
     buffer::Buffer, symbols, layout::{Alignment, Rect}, prelude::*, style::{Color, Styled, Stylize}, widgets::{Block, BorderType, Borders, Clear, Paragraph, Widget, Wrap, canvas::Canvas, canvas::Line}
 };
@@ -10,11 +8,10 @@ use ratatui::{
 use crate::{components::enums::ShotgunCycleView, ui_components::widget_data::{self, WidgetData, WidgetKind}};
 use crate::app::{ App };
 
-const PLAYER_ART: &str = r#"
- (\_/)
- ( •_•)
-/>🍪
-"#;
+const PLAYER_ART: &str = include_str!("assets/player_icon.txt");
+//maybe do compile time solving
+/* const PLAYER_ART_WIDTH: ;
+const PLAYER_ART_HEIGHT: ; */
 
 pub const SHOTGUN_ART: &str = r#"
  ,______________________________________
@@ -97,7 +94,7 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
     frame.render_widget(&border, frame.area());
 
     //always on the bottom
-    render_shotgun_popup(app, frame, widget_data);
+    render_shotgun_popup(frame, widget_data);
 
     for kind in &widget_data.render_stack {
         let state = widget_data.get_state(*kind);
@@ -106,7 +103,7 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
                 WidgetKind::Data => render_data_popup(app, frame, &widget_data),
                 WidgetKind::Log => render_log_popup(app, frame, &widget_data),
                 WidgetKind::Inventory => render_inventory_popup(app, frame, &widget_data, &chunks),
-                WidgetKind::Player => render_player_popup(app, frame, &widget_data),
+                WidgetKind::Player => render_player_popup(app, frame, &widget_data, app.match_data.player_names()),
                 _ => return Some("shotgun is already displayed by default".to_string()),
             }
         }
@@ -206,7 +203,7 @@ fn render_inventory_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData
     frame.render_widget(log_popup, chunks[2]);
 }
 
-fn render_player_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
+fn render_player_popup(frame: &mut Frame, widget_data: &WidgetData, name: String) {
 
     let frame_area = frame.area();
     let w = 10;
@@ -215,8 +212,8 @@ fn render_player_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
     let w = w.min(frame_area.width);
     let h = h.min(frame_area.height);
 
-    let x = frame_area.x + (frame_area.width - w) / 2;
-    let y = frame_area.y + (9 * (frame_area.height - h) / 10);
+    let x = frame_area.x + (frame_area.width * 7 / 10);
+    let y = frame_area.y + (frame_area.height * 9 / 10) - h;
     let area = Rect {
         x,
         y,
@@ -227,7 +224,7 @@ fn render_player_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
     // The "icon" — can be emoji, unicode, ASCII art, etc.
 
     let mut player_popup = Paragraph::new(PLAYER_ART)
-        .block(Block::default().title("Popup").borders(Borders::NONE));
+        .block(Block::default().title("Popup").title(name).borders(Borders::NONE));
     if widget_data.is_focused(WidgetKind::Player) {
         player_popup = player_popup.set_style(Style::default().fg(widget_data.get_color(&WidgetKind::Player).unwrap_or(Color::White)))
     }
@@ -237,12 +234,23 @@ fn render_player_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
 }
 
 //begin changing "popups" to not be such as shotgun and inventory
-fn render_shotgun_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
+fn render_shotgun_popup(frame: &mut Frame, widget_data: &WidgetData) {
+
     let frame_area = frame.area();
+
+    /* const DEFAULT_WIDTH: u16 = 68;
+    const DEFAULT_HEIGHT: u16 = 10;
+
+    let anchor_w = DEFAULT_WIDTH.min(frame.area().width);
+    let anchor_h = DEFAULT_HEIGHT.min(frame.area().height);
+
+    let anchor_x = frame_area.x + (frame_area.width - anchor_w) / 2;
+    let anchor_y = frame_area.y + (frame_area.height - anchor_h) / 2; */
+
     match widget_data.shotgun_cycle_view {
         ShotgunCycleView::Shooting => {
             //find the correct values here
-            let w = 120;
+            let w = 105;
             let h = 10;
             let w = w.min(frame_area.width);
             let h = h.min(frame_area.height);
@@ -258,7 +266,7 @@ fn render_shotgun_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) 
             frame.render_widget(shotgun_popup, area);
         },
         ShotgunCycleView::Blanking => {
-            let w = 100;
+            let w = 90;
             let h = 10;
             let w = w.min(frame_area.width);
             let h = h.min(frame_area.height);

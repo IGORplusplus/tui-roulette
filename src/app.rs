@@ -214,10 +214,11 @@ impl App {
     pub fn handle_key_events(&mut self, key_event: KeyEvent) -> color_eyre::Result<()> {
         match key_event.code {
             KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
-            KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
+            /* KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
-            },
+            }, */
 
+            //ui keys
             KeyCode::Char('d' | 'D') => {
                 self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Data)))
             },
@@ -233,9 +234,12 @@ impl App {
                     self.events.send(AppEvent::ScrollUp)
             },
             KeyCode::Char('j') => self.events.send(AppEvent::ScrollDown),
+
             //need to find a key that isn't escaped
             // KeyCode::Char('t') => self.events.send(AppEvent::ChangeFocusBack),
             KeyCode::Tab => self.events.send(AppEvent::ChangeFocus),
+
+            //game keys
             KeyCode::Char('r' | 'R') => {
                 match self.match_data.round_count() {
                     1 => self.events.send(AppEvent::Reload(ReloadAmount::One)),
@@ -247,6 +251,12 @@ impl App {
                 }
             }
             KeyCode::Char(' ') => self.events.send(AppEvent::Shoot),
+            KeyCode::Char('1') => {
+                self.events.send(AppEvent::ChangePlayerTurn);
+            },
+            KeyCode::Char('2') => {
+                self.events.send(AppEvent::ChangePlayerTurn(self.match_data.second_player_id()));
+            },
             // Other handlers you could add here.
             _ => {}
         }
