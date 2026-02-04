@@ -39,6 +39,8 @@ pub enum AppEvent {
     Reload(ReloadAmount),
     /// Shoot
     Shoot,
+    ///
+    ChangePlayerTurn(usize),
 
     ///UI EVENTS
     ShowPopup(Option<WidgetKind>),

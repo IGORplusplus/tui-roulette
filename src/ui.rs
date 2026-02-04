@@ -5,41 +5,19 @@ use ratatui::{
 //add svg crate
 /* use svg::{Tree, NodeKind}; */
 
-use crate::{components::enums::ShotgunCycleView, ui_components::widget_data::{self, WidgetData, WidgetKind}};
 use crate::app::{ App };
+use crate::{components::enums::ShotgunCycleView, ui_components::widget_data::{self, WidgetData, WidgetKind}};
+use crate::components::match_data::MatchData;
+use crate::components::player::Player;
 
-const PLAYER_ART: &str = include_str!("assets/player_icon.txt");
+pub const PLAYER_ART: &str = include_str!("assets/player_icon.txt");
 //maybe do compile time solving
 /* const PLAYER_ART_WIDTH: ;
 const PLAYER_ART_HEIGHT: ; */
 
-pub const SHOTGUN_ART: &str = r#"
- ,______________________________________
-|_________________,----------._ [____]  ""-,__  __....-----=====
-               (_(||||||||||||)___________/   ""                |
-                  `----------'        [ ))"-,                   |
-                                       ""    `,  _,--....___    |
-                                               `/           """"
-"#;
-
-pub const BANG: &str = r#"
-########     ###    ##    ##  ######   ,______________________________________
-##     ##   ## ##   ###   ## ##    ## |_________________,----------._ [____]  ""-,__  __....-----=====
-##     ##  ##   ##  ####  ## ##                      (_(||||||||||||)___________/   ""                |
-########  ##     ## ## ## ## ##   ####                  `----------'        [ ))"-,                   |
-##     ## ######### ##  #### ##    ##                                        ""    `,  _,--....___    |
-##     ## ##     ## ##   ### ##    ##                                                `/           """"
-########  ##     ## ##    ##  ######
-"#;
-
-pub const CLICK: &str = r#"
-     |    o     |     ,______________________________________
-,---.|    .,---.|__/ |_________________,----------._ [____]  ""-,__  __....-----=====
-|    |    ||    |  \                (_(||||||||||||)___________/   ""                |
-`---'`---'``---'`   `                  `----------'        [ ))"-,                   |
-                                                            ""    `,  _,--....___    |
-                                                                    `/           """"
-"#;
+pub const SHOTGUN_ART: &str = include_str!("assets/shotgun.txt");
+pub const BANG: &str = include_str!("assets/bang.txt");
+pub const CLICK: &str = include_str!("assets/click.txt");
 
 pub const ZAP: &str = r#"
 "#;
@@ -96,6 +74,10 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
     //always on the bottom
     render_shotgun_popup(frame, widget_data);
 
+    //just add it to the render_stack
+    render_player_popup(frame, &widget_data, &app.match_data, 0);
+    render_player_popup(frame, &widget_data, &app.match_data, 1);
+
     for kind in &widget_data.render_stack {
         let state = widget_data.get_state(*kind);
         if state.display {
@@ -103,7 +85,7 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
                 WidgetKind::Data => render_data_popup(app, frame, &widget_data),
                 WidgetKind::Log => render_log_popup(app, frame, &widget_data),
                 WidgetKind::Inventory => render_inventory_popup(app, frame, &widget_data, &chunks),
-                WidgetKind::Player => render_player_popup(app, frame, &widget_data, app.match_data.player_names()),
+                // WidgetKind::Player(i) => render_player_popup(frame, &widget_data, app.match_data.players[*i].clone(), *i),
                 _ => return Some("shotgun is already displayed by default".to_string()),
             }
         }
@@ -116,11 +98,11 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
         .block(Block::default().title("Popup").borders(Borders::ALL))
         .wrap(Wrap { trim: true })
         .style(Style::default().fg(color));
-    
+
     if focused {
         popup = popup.set_style(Style::default().fg(Color::LightRed));
     }
-    
+
     frame.render_widget(Clear, area);
     frame.render_widget(popup, area);
 } */
@@ -147,9 +129,8 @@ fn render_data_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
     let mut data_popup = Paragraph::new(popup_content)
         .block(Block::default().title("Popup").borders(Borders::ALL))
         .wrap(Wrap { trim: true })
-        .style(Style::default()
-            .fg(widget_data.get_color(&WidgetKind::Data).unwrap_or(Color::White))
-        );
+        .style(Style::default().fg(Color::White));
+
     if widget_data.is_focused(WidgetKind::Data) {
         data_popup = data_popup.set_style(Style::default().fg(Color::LightRed));
     }
@@ -203,17 +184,32 @@ fn render_inventory_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData
     frame.render_widget(log_popup, chunks[2]);
 }
 
-fn render_player_popup(frame: &mut Frame, widget_data: &WidgetData, name: String) {
+fn measure_art(art: &str) -> (u16, u16) {
+    let height = art.lines().count() as u16;
 
+    let width = art
+        .lines()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(0) as u16;
+
+    (width, height)
+}
+
+fn render_player_popup(frame: &mut Frame, widget_data: &WidgetData, match_data: &MatchData, i: usize) {
     let frame_area = frame.area();
-    let w = 10;
-    let h = 10;
+    let player = match_data.players[i].clone();
 
-    let w = w.min(frame_area.width);
-    let h = h.min(frame_area.height);
+    let (w, h) = measure_art(player.art);
 
-    let x = frame_area.x + (frame_area.width * 7 / 10);
-    let y = frame_area.y + (frame_area.height * 9 / 10) - h;
+    let x = frame_area.x + (frame_area.width * 5 / 10) - w / 2;
+
+    let y = match i {
+        0 => frame_area.y + 1,
+        1 => frame_area.y + frame_area.height.saturating_sub(h + 1),
+        _ => frame_area.y + 1,
+    };
+
     let area = Rect {
         x,
         y,
@@ -221,13 +217,26 @@ fn render_player_popup(frame: &mut Frame, widget_data: &WidgetData, name: String
         height: h,
     };
 
-    // The "icon" — can be emoji, unicode, ASCII art, etc.
+    let mut player_color = Color::White;
 
-    let mut player_popup = Paragraph::new(PLAYER_ART)
-        .block(Block::default().title("Popup").title(name).borders(Borders::NONE));
-    if widget_data.is_focused(WidgetKind::Player) {
-        player_popup = player_popup.set_style(Style::default().fg(widget_data.get_color(&WidgetKind::Player).unwrap_or(Color::White)))
+    if match_data.player_turn == Some(i) {
+        player_color = Color::LightRed;
     }
+
+    let player_popup = Paragraph::new(player.art.to_string())
+        .style(Style::default().fg(player_color))
+        .alignment(Alignment::Left)
+        .wrap(Wrap { trim: false })
+        .block(
+            Block::default()
+                .title(player.name.clone())
+                .title_style(Style::default().fg(player_color))
+                .borders(Borders::NONE),
+        );
+
+    /* if widget_data.is_focused(WidgetKind::Player(i)) {
+        player_popup = player_popup.set_style(Style::default().fg(widget_data.get_color(&WidgetKind::Player(i)).unwrap_or(player_color)))
+    } */
 
     frame.render_widget(Clear, area);
     frame.render_widget(player_popup, area);

@@ -69,10 +69,10 @@ impl App {
     pub fn send_log(&mut self, message: Option<String>) {
         if let Some(msg) = message {
             let max_size: usize = 1000;
-            if self.logger.log.len() >= max_size {
-                self.logger.log.pop_front();
+            if self.logger.len() >= max_size {
+                self.logger.pop_front();
             }
-            self.logger.log.push_back(msg)
+            self.logger.send_log(Some(msg));
         }
     }
 
@@ -185,6 +185,12 @@ impl App {
                         widget_data.toggle_focus(WidgetKind::Shotgun);
                     },
 
+                    AppEvent::ChangePlayerTurn(num) => {
+                        self.match_data.update_turn(Some(num));
+                        self.logger.send_log(Some(format!("now {}'s turn {:?}", num, self.match_data.player_turn)));
+                    },
+
+                    //make this into a scroll wheel as well
                     AppEvent::ScrollUp => {
                         /* if self.logger.log_scroll > 0 {
                             self.logger.scroll_up();
@@ -193,6 +199,7 @@ impl App {
                     AppEvent::ScrollDown => {
 /*                         self.logger.scroll_down(); */
                     },
+
                     AppEvent::ChangeFocus => {
                         let mut widget_data = self.widget_data.lock().await;
                         widget_data.focus_next();
@@ -227,7 +234,7 @@ impl App {
             },
 
             //KeyCode::Char('i' | 'I') => self.events.send(AppEvent::ShowInventory),
-            KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Player))),
+            // KeyCode::Char('p' | 'P') => self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Player))),
             // KeyCode::Char('s' | 'S') => self.events.send(AppEvent::FocusShotgun),
             KeyCode::Char('x' | 'X') => self.events.send(AppEvent::HideFocusedPopup),
             KeyCode::Char('k') => {
@@ -252,10 +259,10 @@ impl App {
             }
             KeyCode::Char(' ') => self.events.send(AppEvent::Shoot),
             KeyCode::Char('1') => {
-                self.events.send(AppEvent::ChangePlayerTurn);
+                self.events.send(AppEvent::ChangePlayerTurn(0));
             },
             KeyCode::Char('2') => {
-                self.events.send(AppEvent::ChangePlayerTurn(self.match_data.second_player_id()));
+                self.events.send(AppEvent::ChangePlayerTurn(1));
             },
             // Other handlers you could add here.
             _ => {}

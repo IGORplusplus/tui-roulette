@@ -103,7 +103,7 @@ impl Shotgun {
             *cycle = ShotgunCycle::Ready;
         }
 
-        Some("Reloaded shotgun".to_string())
+        Some(format!("Reloaded shotgun with {} shells", num_shells))
     }
 
     async fn load(&self, all_shells: Vec<Shell>, weights: Vec<usize>, num_shells: usize) {

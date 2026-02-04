@@ -3,10 +3,9 @@ use crate::components::player::Player;
 #[derive(Debug, Default, Clone)]
 pub struct MatchData {
     //try my best not always operate on these values directly
-    round_count: usize,
+    pub round_count: usize,
     //represents the players
-    turn: Option<usize>,
-    player_turn: Option<u8>,
+    pub player_turn: Option<usize>,
     pub players: Vec<Player>,
 }
 
@@ -15,7 +14,6 @@ impl MatchData {
     pub fn new() -> Self {
         MatchData {
             round_count: 1,
-            turn: None,
             player_turn: None,
             players: vec![Player::new(), Player::new()],
         }
@@ -29,7 +27,7 @@ impl MatchData {
         self.round_count += 1;
     }
 
-    pub fn update_turn(&mut self, new_turn: Option<u8>) {
+    pub fn update_turn(&mut self, new_turn: Option<usize>) {
         self.player_turn = new_turn;
     }
 
@@ -38,13 +36,14 @@ impl MatchData {
             .and_then(|turn| self.players.get(turn as usize))
     }
 
-    pub fn first_player_id(&self) -> Option<u8> {
+    pub fn first_player_id(&self) -> Option<usize> {
         let id = self.players[0].id;
         Some(id)
     }
 
-    pub fn second_player_id(&self) -> Option<u8> {
+    pub fn second_player_id(&self) -> Option<usize> {
         let id = self.players[1].id;
         Some(id)
     }
+
 }

@@ -30,16 +30,6 @@ impl WidgetState {
         }
     }
 
-    /* pub fn new_shotgun_blank() -> WidgetState {
-        WidgetState {
-            display: false,
-            focus: false,
-            area: None,
-            content: None,
-            color: Some(Color::Red),
-        }
-    } */
-
     pub fn new_content(content: &str, color: Option<Color>) -> WidgetState{
         let content: String = content.to_string();
         WidgetState {
@@ -71,7 +61,7 @@ pub enum WidgetKind {
     Log,
     Data,
     Inventory,
-    Player,
+    Player(usize),
     Shotgun,
     Confirmation,
 }
@@ -82,7 +72,7 @@ pub struct WidgetData {
     log: WidgetState,
     data: WidgetState,
     inventory: WidgetState,
-    player: WidgetState,
+    players: Vec<WidgetState>,
     shotgun: WidgetState,
 
     confirmation: WidgetState,
@@ -101,7 +91,7 @@ impl WidgetData {
             log: WidgetState::new_blank(),
             data: WidgetState::new_blank(),
             inventory: WidgetState::new_blank(),
-            player: WidgetState::new_blank(),
+            players: vec![WidgetState::new_blank(); 2],
             shotgun: WidgetState::new_content(SHOTGUN_ART, Some(Color::Red)),
 
             confirmation: WidgetState::new_blank(),
@@ -114,15 +104,17 @@ impl WidgetData {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (WidgetKind, &WidgetState)> {
-        [
+        let static_widgets = [
             (WidgetKind::Log, &self.log),
             (WidgetKind::Data, &self.data),
             (WidgetKind::Inventory, &self.inventory),
-            (WidgetKind::Player, &self.player),
             (WidgetKind::Shotgun, &self.shotgun),
             (WidgetKind::Confirmation, &self.confirmation),
-        ]
+        ];
+
+        static_widgets
             .into_iter()
+            .chain(self.players.iter().enumerate().map(|(i, player)| (WidgetKind::Player(i), player)))
     }
 
     pub fn shown_widgets(&self) -> Option<WidgetKind> {
@@ -131,14 +123,16 @@ impl WidgetData {
             .map(|(kind, _)| kind)
     }
 
-    fn order() -> [WidgetKind; 5] {
-        [
+    fn order(&self) -> Vec<WidgetKind> {
+        let mut order = vec![
             WidgetKind::Log,
             WidgetKind::Data,
             WidgetKind::Inventory,
-            WidgetKind::Player,
             WidgetKind::Confirmation,
-        ]
+        ];
+
+        order.extend((0..self.players.len()).map(WidgetKind::Player));
+        order
     }
 
     fn get(&self, kind: WidgetKind) -> &WidgetState {
@@ -146,7 +140,7 @@ impl WidgetData {
             WidgetKind::Log => &self.log,
             WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
-            WidgetKind::Player => &self.player,
+            WidgetKind::Player(i) => &self.players[i],
             WidgetKind::Shotgun => &self.shotgun,
             WidgetKind::Confirmation => &self.confirmation,
         }
@@ -157,15 +151,16 @@ impl WidgetData {
             WidgetKind::Log => &mut self.log,
             WidgetKind::Data => &mut self.data,
             WidgetKind::Inventory => &mut self.inventory,
-            WidgetKind::Player => &mut self.player,
+            WidgetKind::Player(i) => &mut self.players[i],
             WidgetKind::Shotgun => &mut self.shotgun,
             WidgetKind::Confirmation => &mut self.confirmation,
         }
     }
 
-    ///TODO: I want to understand this code
+    //TODO: I want to understand this code
     pub fn focus_next(&mut self) {
-        let order = Self::order();
+        let order = self.order();
+        let prev_focus = self.current_focus;
 
         let confirmation_displayed = self.get(WidgetKind::Confirmation).display;
         if confirmation_displayed == true {
@@ -191,10 +186,20 @@ impl WidgetData {
             let kind = order[next_idx];
 
             if self.get(kind).display {
+                // new focus
                 self.get_mut_widget(kind).focus = true;
                 self.current_focus = Some(kind);
+
+                // redraw previously focused widget
+                if let Some(prev) = prev_focus {
+                    self.render_stack.retain(|&k| k != prev);
+                    self.render_stack.push(prev);
+                }
+
+                // redraw newly focused widget
                 self.render_stack.retain(|&k| k != kind);
                 self.render_stack.push(kind);
+
                 return;
             }
 
@@ -203,7 +208,7 @@ impl WidgetData {
     }
 
     pub fn focus_prev(&mut self) {
-        let order = Self::order();
+        let order = self.order();
 
         let confirmation_displayed = self.get(WidgetKind::Confirmation).display;
         if confirmation_displayed == true {
@@ -246,7 +251,7 @@ impl WidgetData {
             WidgetKind::Log => &self.log,
             WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
-            WidgetKind::Player => &self.player,
+            WidgetKind::Player(idx) => &self.players[idx],
             WidgetKind::Shotgun => &self.shotgun,
             WidgetKind::Confirmation => &self.confirmation,
         }
@@ -265,7 +270,7 @@ impl WidgetData {
             WidgetKind::Log => self.log.focus = !self.log.focus,
             WidgetKind::Data => self.data.focus = !self.data.focus,
             WidgetKind::Inventory => self.inventory.focus = !self.inventory.focus,
-            WidgetKind::Player => self.player.focus = !self.player.focus,
+            WidgetKind::Player(i) => self.players[i].focus = !self.players[i].focus,
             WidgetKind::Shotgun => self.shotgun.focus = !self.shotgun.focus,
             WidgetKind::Confirmation => self.confirmation.focus = !self.confirmation.focus,
         }
@@ -283,7 +288,7 @@ impl WidgetData {
             WidgetKind::Log => &self.log,
             WidgetKind::Data => &self.data,
             WidgetKind::Inventory => &self.inventory,
-            WidgetKind::Player => &self.player,
+            WidgetKind::Player(i) => &self.players[i],
             WidgetKind::Shotgun => &self.shotgun,
             WidgetKind::Confirmation => &self.confirmation,
         };
@@ -321,7 +326,9 @@ impl WidgetData {
         self.log.focus = false;
         self.data.focus = false;
         self.inventory.focus = false;
-        self.player.focus = false;
+        for player in &mut self.players {
+            player.focus = false;
+        }
         self.shotgun.focus = false;
         self.confirmation.focus = false;
 
@@ -346,10 +353,10 @@ impl WidgetData {
                 self.inventory.focus = true;
                 self.current_focus = Some(WidgetKind::Inventory);
             },
-            WidgetKind::Player => {
-                self.player.focus = true;
-                self.player.color = Some(Color::LightRed);
-                self.current_focus = Some(WidgetKind::Player)
+            WidgetKind::Player(i) => {
+                self.players[i].focus = true;
+                self.players[i].color = Some(Color::LightRed);
+                self.current_focus = Some(WidgetKind::Player(i))
             },
             WidgetKind::Shotgun => {
                 self.shotgun.focus = true;
@@ -368,7 +375,7 @@ impl WidgetData {
             WidgetKind::Data => self.data.color,
             WidgetKind::Inventory => self.inventory.color,
             WidgetKind::Shotgun => self.shotgun.color,
-            WidgetKind::Player => self.player.color,
+            WidgetKind::Player(i) => self.players[*i].color,
             WidgetKind::Confirmation => self.confirmation.color,
         }
     }

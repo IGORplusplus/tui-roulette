@@ -1,14 +1,34 @@
 use std::collections::VecDeque;
 
+use std::time::{Duration, Instant};
+
+use color_eyre::Result;
+use ratatui::{
+    crossterm::event::{self, Event, KeyCode},
+    layout::{Alignment, Constraint, Layout, Margin},
+    style::{Color, Style, Stylize},
+    symbols::scrollbar,
+    text::{Line, Masked, Span},
+    widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
+    DefaultTerminal, Frame,
+};
+
 #[derive(Debug)]
 pub struct Logger {
     pub log: VecDeque<String>,
     history_size: usize,
-
     //display specific
     window_size: usize,
     window: Vec<String>,
     pub log_scroll: usize,
+}
+
+#[derive(Default)]
+struct ScrollState {
+    pub vertical_scroll_state: ScrollbarState,
+    pub horizontal_scroll_state: ScrollbarState,
+    pub vertical_scroll: usize,
+    pub horizontal_scroll: usize,
 }
 
 impl Logger {
@@ -69,7 +89,6 @@ impl Logger {
         }
     }
 
-
     pub fn update_window(&mut self) {
         let total = self.log.len();
 
@@ -88,5 +107,13 @@ impl Logger {
 
     pub fn get_window(&self) -> &[String] {
         &self.window
+    }
+    
+    pub fn pop_front(&mut self) {
+        self.log.pop_front();
+    }
+    
+    pub fn len(&self) -> usize {
+        self.log.len()
     }
 }
