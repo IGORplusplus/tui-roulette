@@ -150,34 +150,43 @@ impl App {
                         //widget logic
                         // Lock widget_data once
                         let widget_data = self.widget_data.lock().await;
-                        
+
                         // Get the focused widget and copy it out
                         let kind_opt = widget_data.get_focus();
-                        
-                        if let Some(kind) = kind_opt {
-                            // Drop the lock before calling send_log
-                            drop(widget_data);
-                            
-                            // Now it's safe to call send_log
-                            self.send_log(Some(format!("hiding {:?}", kind)));
-                            
-                            // Re-lock to modify widget_data
-                            let mut widget_data = self.widget_data.lock().await;
-                            
-                            // Hide the widget if it's displayed
-                            if widget_data.is_displayed(kind) {
-                                widget_data.hide_widget(kind);
-                            }
-                            
-                            // Update render stack
-                            widget_data.render_stack.retain(|k| *k != kind);
-                            
-                            // Focus next if anything is left
-                            if !widget_data.render_stack.is_empty() {
-                                widget_data.focus_next();
-                            }
-                        }
+                        match kind_opt {
+                            Some(WidgetKind::Shotgun) => {
+                                drop(widget_data);
+                            },
+                            Some(WidgetKind::Player(_)) => {
+                                drop(widget_data);
+                            },
+                            _=> {
+                                if let Some(kind) = kind_opt {
+                                    // Drop the lock before calling send_log
+                                    drop(widget_data);
 
+                                    // Now it's safe to call send_log
+                                    self.send_log(Some(format!("hiding {:?}", kind)));
+
+                                    // Re-lock to modify widget_data
+                                    let mut widget_data = self.widget_data.lock().await;
+
+                                    // Hide the widget if it's displayed
+                                    if widget_data.is_displayed(kind) {
+                                        widget_data.hide_widget(kind);
+                                    }
+
+                                    // Update render stack
+                                    widget_data.render_stack.retain(|k| *k != kind);
+
+                                    // Focus next if anything is left
+                                    if !widget_data.render_stack.is_empty() {
+                                        widget_data.focus_next();
+                                    }
+                                }
+
+                            },
+                        } 
                     },
 
                     AppEvent::FocusShotgun => {
@@ -186,6 +195,8 @@ impl App {
                     },
 
                     AppEvent::ChangePlayerTurn(num) => {
+                        let mut widget_data = self.widget_data.lock().await;
+                        widget_data.kind_focus(WidgetKind::Player(num));
                         self.match_data.update_turn(Some(num));
                         self.logger.send_log(Some(format!("now {}'s turn {:?}", num, self.match_data.player_turn)));
                     },

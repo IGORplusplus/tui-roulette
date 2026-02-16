@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 //widget-data.rs
 use ratatui::layout::Rect;
-use crate::ui::{SHOTGUN_ART, BANG, CLICK};
+use crate::ui::{SHOTGUN_ART, BANG, CLICK, SHELL, PLAYER_ART};
 use crate::components::enums::ShotgunCycleView;
 
 use ratatui::style::{Color, Style, Stylize};
@@ -87,19 +87,22 @@ pub struct WidgetData {
 
 impl WidgetData {
     pub fn new() -> WidgetData {
+        let shotgun = WidgetState::new_content(SHOTGUN_ART, Some(Color::Red));
+        let player_1 = WidgetState::new_content(PLAYER_ART, Some(Color::White));
+        let player_2 = WidgetState::new_content(PLAYER_ART, Some(Color::White));
+
         WidgetData {
             log: WidgetState::new_blank(),
             data: WidgetState::new_blank(),
             inventory: WidgetState::new_blank(),
-            players: vec![WidgetState::new_blank(); 2],
-            shotgun: WidgetState::new_content(SHOTGUN_ART, Some(Color::Red)),
-
+            players: vec![player_1, player_2],
+            shotgun,
             confirmation: WidgetState::new_blank(),
 
             current_focus: None,
             shotgun_cycle_view: ShotgunCycleView::default(),
 
-            render_stack: Vec::new(),
+            render_stack: vec![WidgetKind::Shotgun, WidgetKind::Player(0), WidgetKind::Player(1)],
         }
     }
 

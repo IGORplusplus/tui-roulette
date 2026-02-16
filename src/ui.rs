@@ -18,14 +18,9 @@ const PLAYER_ART_HEIGHT: ; */
 pub const SHOTGUN_ART: &str = include_str!("assets/shotgun.txt");
 pub const BANG: &str = include_str!("assets/bang.txt");
 pub const CLICK: &str = include_str!("assets/click.txt");
+pub const SHELL: &str = include_str!("assets/shell.txt");
 
 pub const ZAP: &str = r#"
-"#;
-
-pub const SHELL: &str = r#"
-┏━┛┃ ┃┏━┛┃  ┃
-━━┃┏━┃┏━┛┃  ┃
-━━┛┛ ┛━━┛━━┛━━┛
 "#;
 
 fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
@@ -72,11 +67,11 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
     frame.render_widget(&border, frame.area());
 
     //always on the bottom
-    render_shotgun_popup(frame, widget_data);
+    // render_shotgun_popup(frame, widget_data);
 
     //just add it to the render_stack
-    render_player_popup(frame, &widget_data, &app.match_data, 0);
-    render_player_popup(frame, &widget_data, &app.match_data, 1);
+    /* render_player_popup(frame, &widget_data, &app.match_data, 0);
+    render_player_popup(frame, &widget_data, &app.match_data, 1); */
 
     for kind in &widget_data.render_stack {
         let state = widget_data.get_state(*kind);
@@ -85,7 +80,8 @@ pub fn render_ui(app: &App, frame: &mut Frame, widget_data: &WidgetData) -> Opti
                 WidgetKind::Data => render_data_popup(app, frame, &widget_data),
                 WidgetKind::Log => render_log_popup(app, frame, &widget_data),
                 WidgetKind::Inventory => render_inventory_popup(app, frame, &widget_data, &chunks),
-                // WidgetKind::Player(i) => render_player_popup(frame, &widget_data, app.match_data.players[*i].clone(), *i),
+                WidgetKind::Player(i) => render_player_popup(frame, &widget_data, &app.match_data, *i),
+                WidgetKind::Shotgun => render_shotgun_popup(frame, &widget_data),
                 _ => return Some("shotgun is already displayed by default".to_string()),
             }
         }
@@ -219,8 +215,14 @@ fn render_player_popup(frame: &mut Frame, widget_data: &WidgetData, match_data: 
 
     let mut player_color = Color::White;
 
+    if let Some(WidgetKind::Player(num)) = widget_data.get_focus() {
+        if num == i {
+            player_color = Color::LightRed;
+        }
+    }
+
     if match_data.player_turn == Some(i) {
-        player_color = Color::LightRed;
+        player_color = Color::Red;
     }
 
     let player_popup = Paragraph::new(player.art.to_string())
@@ -233,10 +235,6 @@ fn render_player_popup(frame: &mut Frame, widget_data: &WidgetData, match_data: 
                 .title_style(Style::default().fg(player_color))
                 .borders(Borders::NONE),
         );
-
-    /* if widget_data.is_focused(WidgetKind::Player(i)) {
-        player_popup = player_popup.set_style(Style::default().fg(widget_data.get_color(&WidgetKind::Player(i)).unwrap_or(player_color)))
-    } */
 
     frame.render_widget(Clear, area);
     frame.render_widget(player_popup, area);
