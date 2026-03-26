@@ -1,7 +1,7 @@
 //data.rs
 
-use crate::components::shotgun::{Shotgun};
-use crate::components::match_data::{MatchData};
+use crate::components::match_data::MatchData;
+use crate::components::shotgun::Shotgun;
 
 //need to implement things which would allow default and clone
 #[derive(Debug, Default, Clone)]

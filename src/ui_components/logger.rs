@@ -4,13 +4,13 @@ use std::time::{Duration, Instant};
 
 use color_eyre::Result;
 use ratatui::{
+    DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyCode},
     layout::{Alignment, Constraint, Layout, Margin},
     style::{Color, Style, Stylize},
     symbols::scrollbar,
     text::{Line, Masked, Span},
     widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
-    DefaultTerminal, Frame,
 };
 
 #[derive(Debug)]
@@ -61,14 +61,13 @@ impl Logger {
         /* let max_scroll = self.window.len().saturating_sub(self.window_size);
         if self.log_scroll >= max_scroll.saturating_sub(1) {
             self.log_scroll = max_scroll;
-        } */    
+        } */
         let max_scroll = self.window.len().saturating_sub(self.window_size);
 
         // Only scroll if log_scroll == current max_scroll before adding new log
         if self.log_scroll == max_scroll {
             self.log_scroll = self.window.len().saturating_sub(self.window_size);
         }
-
     }
 
     pub fn set_window_size(&mut self, line_number: usize) {
@@ -97,7 +96,8 @@ impl Logger {
         let end = total.saturating_sub(self.log_scroll);
         let start = end.saturating_sub(self.window_size);
 
-        self.window = self.log
+        self.window = self
+            .log
             .iter()
             .skip(start)
             .take(end - start)
@@ -108,11 +108,11 @@ impl Logger {
     pub fn get_window(&self) -> &[String] {
         &self.window
     }
-    
+
     pub fn pop_front(&mut self) {
         self.log.pop_front();
     }
-    
+
     pub fn len(&self) -> usize {
         self.log.len()
     }

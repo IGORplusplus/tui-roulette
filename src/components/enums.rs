@@ -40,5 +40,5 @@ pub enum ShotgunCycleView {
     Tasing,
     Imposter,
     SelfDestruct,
-    Poison
+    Poison,
 }

@@ -10,7 +10,6 @@ pub struct MatchData {
 }
 
 impl MatchData {
-
     pub fn new() -> Self {
         MatchData {
             round_count: 1,
@@ -45,5 +44,4 @@ impl MatchData {
         let id = self.players[1].id;
         Some(id)
     }
-
 }

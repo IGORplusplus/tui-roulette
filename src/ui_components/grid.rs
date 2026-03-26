@@ -11,7 +11,5 @@ pub struct Grid {
 }
 
 impl Widget for Grid {
-
-    fn render(self, area: Rect, buf: &mut Buffer) {
-    }
+    fn render(self, area: Rect, buf: &mut Buffer) {}
 }

@@ -1,12 +1,20 @@
 //shotgun.rs
-use rand::{ Rng, seq::SliceRandom, thread_rng, distributions::{WeightedIndex, Distribution} };
+use rand::{
+    Rng,
+    distributions::{Distribution, WeightedIndex},
+    seq::SliceRandom,
+    thread_rng,
+};
 use std::{cell::RefCell, fmt::format};
 
-use tokio::sync::Mutex;
-use tokio::time::{sleep, Duration};
 use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::time::{Duration, sleep};
 
-use crate::{components::{enums::ShotgunCycleView, shotgun}, ui_components::widget_data::{self, WidgetData}};
+use crate::{
+    components::{enums::ShotgunCycleView, shotgun},
+    ui_components::widget_data::{self, WidgetData},
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct Shotgun {
@@ -27,10 +35,10 @@ enum ShotgunModel {
 enum ShotgunState {
     #[default]
     Stock,
-    SawedOff, //does twice the amount of damage
-    Rusty, //permanent until next round misfire chance increased
+    SawedOff,    //does twice the amount of damage
+    Rusty,       //permanent until next round misfire chance increased
     ThickBarrel, //impossible to saw off
-    Reinforced, //Destruct shell becomes offensive but also destroys the shotgun
+    Reinforced,  //Destruct shell becomes offensive but also destroys the shotgun
 }
 
 #[derive(Debug, Default, Clone)]
@@ -55,7 +63,7 @@ pub enum Shell {
     Poison,
     BeanBag, //makes player stunned for the next turn, so can only use one item
     Taser,
-    Imposter, //looks like a blank but isn't
+    Imposter,     //looks like a blank but isn't
     SelfDestruct, //blows up in the person's face if not reinforced
 }
 
@@ -63,7 +71,6 @@ pub enum Shell {
 //Russian Roulette item, play russian roulette for a turn instead of the shotgun
 
 impl Shotgun {
-
     pub fn new() -> Shotgun {
         Shotgun {
             shells: Arc::new(Mutex::new(Vec::new())),
@@ -77,7 +84,12 @@ impl Shotgun {
         self.shells.lock().await.is_empty()
     }
 
-    pub async fn reload_with(&self, all_shells: Vec<Shell>, weights: Vec<usize>, num_shells: usize ) -> Option<String> {
+    pub async fn reload_with(
+        &self,
+        all_shells: Vec<Shell>,
+        weights: Vec<usize>,
+        num_shells: usize,
+    ) -> Option<String> {
         {
             let cycle = self.cycle.lock().await;
             if !matches!(*cycle, ShotgunCycle::Ready) {
@@ -111,8 +123,7 @@ impl Shotgun {
         let mut shells = self.shells.lock().await;
         shells.clear();
 
-        let dist = WeightedIndex::new(&weights)
-            .expect("weights can not be zero or negative");
+        let dist = WeightedIndex::new(&weights).expect("weights can not be zero or negative");
 
         for _ in 0..num_shells {
             let idx = dist.sample(&mut rng);
@@ -120,7 +131,7 @@ impl Shotgun {
             shells.push(random_shell);
         }
 
-        if !shells.is_empty(){
+        if !shells.is_empty() {
             if !shells.contains(&Shell::Blank) {
                 let num: usize = rng.gen_range(0..shells.len());
                 shells[num] = Shell::Blank;
@@ -141,19 +152,16 @@ impl Shotgun {
         let weights = vec![
             10, //Live
             12, //Blank
-            1, //Poison
-            2, //BeanBag
-            1, //Taser
-            1, //Imposter
+            1,  //Poison
+            2,  //BeanBag
+            1,  //Taser
+            1,  //Imposter
         ];
         self.reload_with(all_shells, weights, num_shells).await
     }
 
     pub fn load_default_shells(&self, num_shells: usize) {
-        let all_shells = vec![
-            Shell::Live,
-            Shell::Blank,
-        ];
+        let all_shells = vec![Shell::Live, Shell::Blank];
 
         let weights = vec![
             10, //Live
@@ -163,7 +171,6 @@ impl Shotgun {
     }
 
     pub async fn shoot(&self, widget_data: Arc<Mutex<WidgetData>>) -> Option<String> {
-
         {
             let cycle = self.cycle.lock().await;
             if !matches!(*cycle, ShotgunCycle::Ready) {
@@ -185,7 +192,11 @@ impl Shotgun {
                 if shells.is_empty() {
                     Some(format!("Last shell in shotgun: {:?}", shell))
                 } else {
-                    Some(format!("Popped Shell {:?}, {} shells left", shell, shells.len()))
+                    Some(format!(
+                        "Popped Shell {:?}, {} shells left",
+                        shell,
+                        shells.len()
+                    ))
                 }
             } else {
                 return Some(String::from("No shell in shotgun"));

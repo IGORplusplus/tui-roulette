@@ -1,12 +1,12 @@
 // use crossterm::style::Color;
 use crossterm::terminal::disable_raw_mode;
-use tokio::sync::Mutex;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 //widget-data.rs
-use ratatui::layout::Rect;
-use crate::ui::{SHOTGUN_ART, BANG, CLICK, SHELL, PLAYER_ART};
 use crate::components::enums::ShotgunCycleView;
+use crate::ui::{BANG, CLICK, PLAYER_ART, SHELL, SHOTGUN_ART};
+use ratatui::layout::Rect;
 
 use ratatui::style::{Color, Style, Stylize};
 
@@ -30,7 +30,7 @@ impl WidgetState {
         }
     }
 
-    pub fn new_content(content: &str, color: Option<Color>) -> WidgetState{
+    pub fn new_content(content: &str, color: Option<Color>) -> WidgetState {
         let content: String = content.to_string();
         WidgetState {
             display: true,
@@ -41,7 +41,7 @@ impl WidgetState {
         }
     }
 
-    pub fn new_color(color: Option<Color>) -> WidgetState{
+    pub fn new_color(color: Option<Color>) -> WidgetState {
         WidgetState {
             display: true,
             focus: true,
@@ -102,7 +102,11 @@ impl WidgetData {
             current_focus: None,
             shotgun_cycle_view: ShotgunCycleView::default(),
 
-            render_stack: vec![WidgetKind::Shotgun, WidgetKind::Player(0), WidgetKind::Player(1)],
+            render_stack: vec![
+                WidgetKind::Shotgun,
+                WidgetKind::Player(0),
+                WidgetKind::Player(1),
+            ],
         }
     }
 
@@ -115,9 +119,12 @@ impl WidgetData {
             (WidgetKind::Confirmation, &self.confirmation),
         ];
 
-        static_widgets
-            .into_iter()
-            .chain(self.players.iter().enumerate().map(|(i, player)| (WidgetKind::Player(i), player)))
+        static_widgets.into_iter().chain(
+            self.players
+                .iter()
+                .enumerate()
+                .map(|(i, player)| (WidgetKind::Player(i), player)),
+        )
     }
 
     pub fn shown_widgets(&self) -> Option<WidgetKind> {
@@ -224,7 +231,7 @@ impl WidgetData {
         for kind in order.iter() {
             self.get_mut_widget(*kind).focus = false;
         }
-        
+
         let len = order.len();
         // Start searching from the previous index
         let mut prev_idx = match current_idx {
@@ -244,7 +251,11 @@ impl WidgetData {
                 self.render_stack.push(kind);
                 return;
             }
-            prev_idx = if prev_idx == 0 { order.len() - 1 } else { prev_idx - 1 };
+            prev_idx = if prev_idx == 0 {
+                order.len() - 1
+            } else {
+                prev_idx - 1
+            };
         }
     }
 
@@ -259,7 +270,7 @@ impl WidgetData {
         }
     }
 
-    pub fn is_focused(&self, kind: WidgetKind) -> bool{
+    pub fn is_focused(&self, kind: WidgetKind) -> bool {
         self.get(kind).focus
     }
 
@@ -279,13 +290,12 @@ impl WidgetData {
 
         if self.current_focus == Some(kind) {
             self.current_focus = None;
-        }
-        else {
+        } else {
             self.current_focus = Some(kind);
         }
     }
 
-    pub fn is_displayed(&self, kind: WidgetKind) -> bool{
+    pub fn is_displayed(&self, kind: WidgetKind) -> bool {
         let widget_state = match kind {
             WidgetKind::Log => &self.log,
             WidgetKind::Data => &self.data,
@@ -298,7 +308,6 @@ impl WidgetData {
     }
 
     pub fn display_widget(&mut self, kind: WidgetKind, focus_new: bool) {
-
         if focus_new {
             if let Some(prev_kind) = self.get_focus() {
                 self.get_mut_widget(prev_kind).focus = false;
@@ -313,7 +322,6 @@ impl WidgetData {
     }
 
     pub fn display_widget_with_content(&mut self, kind: WidgetKind, content: String) {
-
         if let Some(prev_kind) = self.get_focus() {
             self.get_mut_widget(prev_kind).focus = false;
         }
@@ -324,7 +332,6 @@ impl WidgetData {
     }
 
     pub fn hide_widget(&mut self, kind: WidgetKind) {
-
         //this is why you pass by reference I guess
         let kind_copy = kind;
         let widget_kind_ref = self.get_mut_widget(kind);
@@ -333,7 +340,6 @@ impl WidgetData {
         if self.current_focus == Some(kind_copy) {
             self.current_focus = None;
         }
-
     }
 
     pub fn remove_focus(&mut self) {
@@ -349,7 +355,7 @@ impl WidgetData {
         self.current_focus = None;
     }
 
-    pub fn kind_focus(&mut self, kind: WidgetKind){
+    pub fn kind_focus(&mut self, kind: WidgetKind) {
         self.remove_focus();
 
         match kind {
@@ -357,29 +363,29 @@ impl WidgetData {
                 self.log.focus = true;
                 self.log.color = Some(Color::LightRed);
                 self.current_focus = Some(WidgetKind::Log);
-            },
+            }
             WidgetKind::Data => {
                 self.data.focus = true;
                 self.data.color = Some(Color::LightRed);
                 self.current_focus = Some(WidgetKind::Data)
-            },
+            }
             WidgetKind::Inventory => {
                 self.inventory.focus = true;
                 self.current_focus = Some(WidgetKind::Inventory);
-            },
+            }
             WidgetKind::Player(i) => {
                 self.players[i].focus = true;
                 self.players[i].color = Some(Color::LightRed);
                 self.current_focus = Some(WidgetKind::Player(i))
-            },
+            }
             WidgetKind::Shotgun => {
                 self.shotgun.focus = true;
                 self.current_focus = Some(WidgetKind::Shotgun)
-            },
+            }
             WidgetKind::Confirmation => {
                 self.confirmation.focus = true;
                 self.current_focus = Some(WidgetKind::Confirmation);
-            },
+            }
         }
     }
 

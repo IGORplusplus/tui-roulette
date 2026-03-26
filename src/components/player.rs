@@ -13,10 +13,9 @@ pub struct Player {
 }
 
 impl Player {
-
     pub fn new() -> Self {
-	let mut rng = rand::thread_rng();
-	let id: usize = rng.gen_range(1..=3511);
+        let mut rng = rand::thread_rng();
+        let id: usize = rng.gen_range(1..=3511);
         Player {
             name: String::new(),
             id,
@@ -28,7 +27,7 @@ impl Player {
 
     pub fn new_art(art: &'static str) -> Self {
         let mut rng = rand::thread_rng();
-	let id: usize = rng.gen_range(1..=3511);
+        let id: usize = rng.gen_range(1..=3511);
         Player {
             name: String::new(),
             id,
@@ -40,11 +39,11 @@ impl Player {
 
     pub fn use_item(&mut self, item: Items) {
         if let Some(pos) = self.items.iter().position(|it| *it == item) {
-	    self.items.remove(pos);
-	}
+            self.items.remove(pos);
+        }
     }
 
     pub fn name_player(&mut self, name: String) {
-	self.name = name;
+        self.name = name;
     }
 }
