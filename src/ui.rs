@@ -123,7 +123,7 @@ fn render_data_popup(app: &App, frame: &mut Frame, widget_data: &WidgetData) {
     );
 
     let mut data_popup = Paragraph::new(popup_content)
-        .block(Block::default().title("Popup").borders(Borders::ALL))
+        .block(Block::default().title("Data").borders(Borders::ALL))
         .wrap(Wrap { trim: true })
         .style(Style::default().fg(Color::White));
 

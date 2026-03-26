@@ -23,10 +23,11 @@ use crossterm::event::EnableMouseCapture;
 use crate::{data::Data, ui_components::widget_data};
 use crate::components::enums::ReloadAmount;
 use crate::components::match_data::*;
-use crate::components::enums::ShotgunCycleView;
+use crate::components::enums::{ShotgunCycleView, GameState, ConfirmationType};
 use crate::components::shotgun::ShotgunCycle;
 use crate::ui_components::widget_data::{WidgetData, WidgetKind};
 use crate::event::{AppEvent, Event, EventHandler};
+use crate::event::AppEvent::HideFocusedPopup;
 use crate::ui;
 use crate::ui_components::logger::Logger;
 
@@ -39,6 +40,9 @@ pub struct App {
     pub events: EventHandler,
     /// game data
     pub data: Data,
+    /// screen state, are you in the game, in the menu, in a confirmation screen
+    pub state: GameState,
+    pub prev_state: Option<GameState>,
     /// match data
     pub match_data: MatchData,
     ///holds the information of the widgets
@@ -53,6 +57,8 @@ impl Default for App {
             running: true,
             events: EventHandler::new(),
             data: Data::new(),
+            state: GameState::default(),
+            prev_state: None,
             match_data: MatchData::new(),
             widget_data: Arc::new(Mutex::new(WidgetData::new())),
             logger: Logger::new(),
@@ -189,6 +195,19 @@ impl App {
                         } 
                     },
 
+                    AppEvent::Confirmation(Some(confirmation_type)) => {
+                        let mut widget_data = self.widget_data.lock().await;
+
+                        match confirmation_type {
+                            ConfirmationType::Quit => {
+                                widget_data.display_widget_with_content(WidgetKind::Confirmation, String::from("Press 'q' to confirm"));
+                                self.prev_state = Some(self.state.clone());
+                                self.state = GameState::Confirmation(ConfirmationType::Quit);
+                            }
+                            _ => {}
+                        }
+                    },
+
                     AppEvent::FocusShotgun => {
                         let mut widget_data = self.widget_data.lock().await;
                         widget_data.toggle_focus(WidgetKind::Shotgun);
@@ -230,16 +249,70 @@ impl App {
 
     /// Handles the key events and updates the state of [`App`].
     pub fn handle_key_events(&mut self, key_event: KeyEvent) -> color_eyre::Result<()> {
+        match &self.state {
+            GameState::Menu => {
+                self.handle_menu_events(key_event)
+            },
+            GameState::Game => {
+                self.handle_game_events(key_event)
+            },
+            GameState::Settings => {
+                self.handle_settings_events(key_event)
+            },
+            GameState::Confirmation(confirmation_type) => {
+                match confirmation_type {
+                    ConfirmationType::Quit => self.handle_quit_confirmation(key_event),
+                    _=> self.handle_default_confirmation(key_event),
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn handle_menu_events(&mut self, key_event: KeyEvent) {
         match key_event.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
-            /* KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
-                self.events.send(AppEvent::Quit)
-            }, */
+            KeyCode::Char('s' | 'S') => self.events.send(AppEvent::StartGame),
+            KeyCode::Char('q' | 'Q') => self.events.send(AppEvent::Confirmation(Some(ConfirmationType::Quit))),
+            _=> todo!(),
+        }
+    }
+
+    pub fn handle_settings_events(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char('q' | 'Q') => self.events.send(AppEvent::Confirmation(Some(ConfirmationType::Quit))),
+            _=> {},
+        }
+    }
+
+    pub fn handle_default_confirmation(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char('q' | 'Q') => self.events.send(AppEvent::Quit),
+            _=> {
+                self.state = self.prev_state.take().unwrap();
+                self.events.send(AppEvent::HideFocusedPopup);
+            },
+        }
+    }
+
+    pub fn handle_quit_confirmation(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char('q' | 'Q') => self.events.send(AppEvent::Quit),
+            _=> {
+                self.state = self.prev_state.take().unwrap();
+                self.events.send(AppEvent::HideFocusedPopup);
+            },
+        }
+    }
+
+    pub fn handle_game_events(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char('q' | 'Q') => self.events.send(AppEvent::Confirmation(Some(ConfirmationType::Quit))),
 
             //ui keys
             KeyCode::Char('d' | 'D') => {
                 self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Data)))
             },
+
             KeyCode::Char('l' | 'L') => {
                 self.events.send(AppEvent::ShowPopup(Some(WidgetKind::Log)));
             },
@@ -278,7 +351,6 @@ impl App {
             // Other handlers you could add here.
             _ => {}
         }
-        Ok(())
     }
 
     pub fn handle_mouse_events(&mut self, mouse_event: MouseEvent) -> color_eyre::Result<()> {

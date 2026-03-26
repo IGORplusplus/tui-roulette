@@ -5,6 +5,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 
 use crate::{components::enums::ReloadAmount, ui_components::widget_data::WidgetKind};
+use crate::components::enums::ConfirmationType;
 
 /// The frequency at which tick events are emitted.
 const TICK_FPS: f64 = 30.0;
@@ -35,6 +36,7 @@ pub enum Event {
 pub enum AppEvent {
 
     ///GAME EVENTS
+    StartGame,
     /// Reload
     Reload(ReloadAmount),
     /// Shoot
@@ -44,6 +46,8 @@ pub enum AppEvent {
 
     ///UI EVENTS
     ShowPopup(Option<WidgetKind>),
+    ///
+    Confirmation(Option<ConfirmationType>),
     /// generic hide popup function
     HideFocusedPopup,
     /// Focus shotgun

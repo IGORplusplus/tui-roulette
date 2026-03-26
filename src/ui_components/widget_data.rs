@@ -160,7 +160,6 @@ impl WidgetData {
         }
     }
 
-    //TODO: I want to understand this code
     pub fn focus_next(&mut self) {
         let order = self.order();
         let prev_focus = self.current_focus;
@@ -305,11 +304,23 @@ impl WidgetData {
                 self.get_mut_widget(prev_kind).focus = false;
             }
             self.get_mut_widget(kind).focus = true;
-            self.kind_focus(kind);
+            // TODO: see if I can get rid of this
+            // self.kind_focus(kind);
             self.get_mut_widget(kind).display = true;
         } else {
             self.get_mut_widget(kind).display = true;
         }
+    }
+
+    pub fn display_widget_with_content(&mut self, kind: WidgetKind, content: String) {
+
+        if let Some(prev_kind) = self.get_focus() {
+            self.get_mut_widget(prev_kind).focus = false;
+        }
+        self.get_mut_widget(kind).focus = true;
+        // self.kind_focus(kind);
+        self.get_mut_widget(kind).display = true;
+        self.get_mut_widget(kind).display = true;
     }
 
     pub fn hide_widget(&mut self, kind: WidgetKind) {

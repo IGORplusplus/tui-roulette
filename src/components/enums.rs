@@ -1,9 +1,17 @@
-#[derive(Default, Debug)]
-pub enum Menu {
+#[derive(Default, Debug, Clone)]
+pub enum GameState {
     #[default]
-    Off,
-    Log,
-    Help,
+    Menu,
+    Game,
+    Settings,
+    Confirmation(ConfirmationType),
+}
+
+#[derive(Debug, Clone)]
+pub enum ConfirmationType {
+    Quit,
+    Item(String),
+    Generic(String),
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -21,7 +29,6 @@ impl ReloadAmount {
         self.clone() as usize
     }
 }
-
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Copy)]
 pub enum ShotgunCycleView {
